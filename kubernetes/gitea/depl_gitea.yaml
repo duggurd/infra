@@ -23,8 +23,8 @@ spec:
             name: gitea-conf
         resources:
           limits:
-            memory: "128Mi"
-            cpu: "500m"
+            memory: "256Mi"
+            cpu: "1000m"
 
         volumeMounts:
           - name: gitea-data
