@@ -1,0 +1,1 @@
+kubectl get svc -o yaml | yq '.[] | .spec'

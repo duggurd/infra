@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: act_runner-conf
+data:
+  GITEA_INSTANCE_URL: "http://192.168.0.147:30300"
+  GITEA_RUNNER_REGISTRATION_TOKEN: "WW2x8vhZSdkEDbrOTIXUg5Q5hq9xpRUEjhMLsU0H"
+  GITEA_RUNNER_NAME: act_runner1
+  # GITEA_RUNNER_LABELS: ""

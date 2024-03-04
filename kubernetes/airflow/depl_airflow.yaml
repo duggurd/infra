@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-depl
+  labels:
+    app: airflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow
+  template:
+    metadata:
+      labels:
+        app: airflow
+    spec:
+      initContainers:
+        - name: init-db
+          image: 127.0.0.1:30500/airflow:latest
+          imagePullPolicy: Always
+          envFrom:
+          - configMapRef:
+              name: airflow-conf
+          command: ["sh", "-c", "airflow db migrate"]
+      containers:
+      - name: airflow
+        image: 127.0.0.1:30500/airflow:latest
+        imagePullPolicy: Always
+        envFrom:
+          - configMapRef:
+              name: airflow-conf
+        env:
+          - name: MINIO_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: airflow-minio-key
+                key: access_key
+          - name: MINIO_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: airflow-minio-key
+                key: secret_key
+        volumeMounts:
+        - name: dags
+          mountPath: /opt/airflow/dags
+          # readOnly: true
+        - name: logs 
+          mountPath: /opt/airflow/logs
+        command: ["sh", "-c", "airflow standalone"]
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "500m"
+          limits:
+            memory: "4096Mi"
+            cpu: "2000m"
+      volumes:
+        - name: dags
+          persistentVolumeClaim:
+            claimName: airflow-pvc
+        - name: logs
+          persistentVolumeClaim:
+            claimName: airflow-logs-pvc 
+
+

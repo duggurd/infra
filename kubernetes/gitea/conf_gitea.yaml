@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitea-conf
+data:
+  GITEA__database__DB_TYPE: postgres
+  GITEA__database__HOST: postgres:5432
+  GITEA__database__NAME: gitea
+  GITEA__database__USER: gitea
+  GITEA__database__PASSWD: gitea

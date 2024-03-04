@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: airflow-pvc
+spec:
+  resources:
+    requests:
+      storage: 256Mi
+  accessModes:
+    - ReadWriteOnce

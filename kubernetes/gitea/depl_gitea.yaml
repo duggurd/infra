@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea
+  labels:
+    app: gitea
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea
+  template:
+    metadata:
+      labels:
+        app: gitea
+    spec:
+      containers:
+      - name: gitea
+        image: gitea/gitea
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: gitea-conf
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+
+        volumeMounts:
+          - name: gitea-data
+            mountPath: /data
+        ports:
+        - containerPort: 22
+        - containerPort: 3000
+
+      # TODO: https://gitea.com/gitea/act_runner/pulls/208/files
+      # - name: act_runner
+      #   image: gitea/act_runner
+      #   imagePullPolicy: IfNotPresent
+      #   resources:
+      #     limits:
+      #       memory: "256Mi"
+      #       cpu: "1000m"
+      #   envFrom:
+      #     - configMapRef:
+      #       name: act_runner-conf
+
+      volumes:
+      - name: gitea-data
+        persistentVolumeClaim:
+          claimName: gitea-pvc
