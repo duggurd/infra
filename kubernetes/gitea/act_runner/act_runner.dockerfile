@@ -16,6 +16,7 @@ COPY --from=builder /opt/src/act_runner/act_runner /usr/local/bin/act_runner
 COPY /scripts/supervisord.conf /etc/supervisord.conf
 COPY /scripts/run.sh /opt/act/run.sh
 COPY /scripts/rootless.sh /opt/act/rootless.sh
+COPY ./act_runner_config.yaml /etc/act_runner/config.yaml
 
 RUN mkdir /data \
     && chown rootless:rootless /data
