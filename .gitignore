@@ -27,3 +27,6 @@ __pycache__
 
 **/lambda/**/*packages/python
 .vscode
+
+
+.direnv
