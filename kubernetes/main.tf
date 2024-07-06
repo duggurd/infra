@@ -4,27 +4,6 @@ provider "kubernetes" {
   insecure       = true
 }
 
-terraform {
-  required_providers {
-    clickhouse = {
-      source = "ivanofthings/clickhouse"
-    }
-  }
-}
-
-provider "clickhouse" {
-  port = 31671
-  host = "homelab.kiko-ghoul.ts.net"
-  username = "default"
-  password = ""
-}
-
-resource "clickhouse_db" "test_db" {
- name = "test_db" 
- cluster = "cluster"
-}
-
-
 module "clickhouse_mod" {
   source = "./clickhouse/"
 }
