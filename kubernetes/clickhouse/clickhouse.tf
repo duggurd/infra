@@ -53,7 +53,6 @@ resource "kubernetes_pod" "clickhouse_pod" {
       } 
     }
   } 
-  
 }
 
 

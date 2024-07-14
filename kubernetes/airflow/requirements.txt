@@ -4,3 +4,4 @@ apache-airflow-providers-postgres
 dbt-core
 minio
 requests
+clickhouse-connect

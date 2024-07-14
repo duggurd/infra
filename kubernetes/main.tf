@@ -4,6 +4,19 @@ provider "kubernetes" {
   insecure       = true
 }
 
+terraform {
+  backend "kubernetes" {
+    secret_suffix = "clickhouse"
+    host = "value"
+    load_config_file = true
+    insecure = true
+    namespace = "terraform"
+    labels = {
+      "owner" = "terraform"
+    }
+  }     
+}
+
 module "clickhouse_mod" {
   source = "./clickhouse/"
 }

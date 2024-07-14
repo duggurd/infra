@@ -8,6 +8,7 @@
 
 # Ignore any .tfvars files that may contain sensitive information
 *.tfvars
+.env
 
 # Ignore override files as they are usually used to override default Terraform configurations
 override.tf

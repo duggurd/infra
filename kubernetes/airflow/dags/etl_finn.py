@@ -1,7 +1,7 @@
-# from airflow.decorators import task, dag
-# import datetime
-# from ingest_finn import datasets
-# from dbt.cli.main import dbtRunner
+from airflow.decorators import task, dag
+import datetime
+from ingest_finn import datasets
+from dbt.cli.main import dbtRunner
 
 
 # @dag(
