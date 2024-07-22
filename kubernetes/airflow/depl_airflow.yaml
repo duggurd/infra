@@ -5,6 +5,7 @@ metadata:
   labels:
     app: airflow
 spec:
+  hostname: airflow
   replicas: 1
   selector:
     matchLabels:

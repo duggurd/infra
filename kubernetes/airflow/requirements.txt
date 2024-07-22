@@ -5,3 +5,4 @@ dbt-core
 minio
 requests
 clickhouse-connect
+virtualenv

@@ -1,15 +1,18 @@
 let 
   pkgs = import <nixpkgs> {};
 in pkgs.mkShell {
-  packages = [ 
-    pkgs.terraform
+  packages = with pkgs; [ 
+    terraform
+    kubectl
+    openssl
 
-    (pkgs.python311.withPackages(pkgs: with pkgs; [
+    (python311.withPackages(ps: with ps; [
       ipykernel
       ipython
       jupyter
       notebook
 
+      build
       pandas
       minio
       clickhouse-connect

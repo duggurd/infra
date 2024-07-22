@@ -29,5 +29,5 @@ __pycache__
 **/lambda/**/*packages/python
 .vscode
 
-
 .direnv
+.terraform.lock.hcl

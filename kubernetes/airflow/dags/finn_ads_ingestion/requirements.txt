@@ -1,0 +1,1 @@
+/opt/airflow/dags/finn_ads_ingestion/finn_ingestion_lib/dist/finn_ingestion_lib-0.0.0-py3-none-any.whl
