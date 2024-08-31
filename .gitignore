@@ -1,0 +1,34 @@
+# Ignore Terraform state files
+*.tfstate
+*.tfstate.backup
+*.tfplan
+
+*.ipynb
+
+# Ignore .terraform directory
+.terraform/
+
+# Ignore any .tfvars files that may contain sensitive information
+.env
+
+# Ignore override files as they are usually used to override default Terraform configurations
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+
+*.zip
+
+*.test.*
+
+__pycache__
+
+**/lambda/**/*packages/python
+.vscode
+
+.direnv
+.terraform.lock.hcl

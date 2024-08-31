@@ -1,0 +1,17 @@
+{
+  "configs": [
+    {
+      "chain_id": "1300",
+      "categories": [
+        "fruits_veggies",
+        "fish",
+        "meat",
+        "chicken",
+        "dairy_egg",
+        "cheese",
+        "snacks_candy",
+        "bakery"
+      ]
+    }
+  ]
+}
