@@ -129,7 +129,7 @@ def transform_finn_ads_metadata_file(client: Minio, search_key: str, ingest_obje
 
     stat = client.stat_object(bucket_name="raw", object_name=raw_object_name)
 
-    if stat.size is not None and stat.size > 0:        
+    if stat.size is None or stat.size == 0:        
         # cleanup
         # remove the empty object, if it was created
         try:
