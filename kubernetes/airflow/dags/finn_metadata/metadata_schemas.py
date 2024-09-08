@@ -6,8 +6,6 @@ from utils.general import extract_nested_df_values
 def SEARCH_ID_REALESTATE_HOMES(df: pd.DataFrame) -> pd.DataFrame:
     df = common_metadata_df_cleaning(df)
 
-    df = df.drop(columns=["area"])
-
     nested_columns = [
         "price_suggestion",
         "price_total",
@@ -26,7 +24,6 @@ def SEARCH_ID_REALESTATE_HOMES(df: pd.DataFrame) -> pd.DataFrame:
 
 def SEARCH_ID_REALESTATE_LETTINGS(df: pd.DataFrame) -> pd.DataFrame:
     df = common_metadata_df_cleaning(df)
-    df = df.drop(columns=["area"])
 
     nested_columns = [
         "price_suggestion",
@@ -69,7 +66,7 @@ def SEARCH_ID_JOB_FULLTIME(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def common_metadata_df_cleaning(df: pd.DataFrame) -> pd.DataFrame:
+def common_metadata_df_cleaning(df: pd.DataFrame, truncate_datetimes_to_ms: bool = True) -> pd.DataFrame:
 
     # Extract relevant data
     df = extract_nested_df_values(df, "coordinates", True)
@@ -85,7 +82,8 @@ def common_metadata_df_cleaning(df: pd.DataFrame) -> pd.DataFrame:
             "logo", 
             "styling", 
             "viewing_times", 
-            "image_urls"
+            "image_urls",
+            "area"
         ], 
         errors="ignore"
     )
@@ -102,7 +100,7 @@ def common_metadata_df_cleaning(df: pd.DataFrame) -> pd.DataFrame:
         df["published"] = pd.NA
 
     df["ingestion_ts"] = pd.Timestamp.now()
-
+    
     return df
 
 

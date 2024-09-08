@@ -52,7 +52,10 @@ def get_finn_metdata_page(page, occupation, published:str = "1"):
 
 def get_ad_html(ad_url: str):
     resp = get_url(ad_url)
-    return resp.content
+    content = resp.content
+    # some ads contain null bytes
+    content = content.replace("\x00".encode("utf-8"), "\uFFFD".encode("utf-8")) 
+    return content
 
 
 def parse_ad_html(html, ad_type:AdType):
