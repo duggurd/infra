@@ -110,17 +110,19 @@ def parse_ad_html(html, ad_type:AdType):
                 record["job_title"] = work_title
     
     # ad content
-    ad_content = main_article.find("div")
-    
-    contents = []
-    for object in ad_content:
-        if object.name == "ul":
-            for li in object.find_all("li"):
-                contents.append(li.text)
-        else:
-            contents.append(object.text)
-    
-    record["content"] = " ".join(contents)
+    if main_article is not None:
+        ad_content = main_article.find("div")
+        
+        if ad_content is not None:
+            contents = []
+            for object in ad_content:
+                if object.name == "ul":
+                    for li in object.find_all("li"):
+                        contents.append(li.text)
+                else:
+                    contents.append(object.text)
+            
+            record["content"] = " ".join(contents)
 
     return record
 
