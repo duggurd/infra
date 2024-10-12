@@ -23,7 +23,7 @@ def ingest_finn():
     for search_key in search_keys:
         @task(task_id=f"ingest_{search_key}")
         def ingest(search_key):
-            from finn_metadata.ingestion import ingest_new_finn_ads
+            from finn_metadata.ingest import ingest_new_finn_ads
             client = connect_to_minio()
             ingest_new_finn_ads(client, search_key)
     
