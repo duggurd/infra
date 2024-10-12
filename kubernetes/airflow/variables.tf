@@ -18,6 +18,16 @@ variable "MINIO_ENDPOINT" {
   type = string
 }
 
+variable "MINIO_ACCESS_KEY" {
+  type = string
+  sensitive = true
+}
+
+variable "MINIO_SECRET_KEY" {
+  type = string
+  sensitive = true
+} 
+
 variable "INGESTION_BUCKET_NAME" {
   type = string
 }

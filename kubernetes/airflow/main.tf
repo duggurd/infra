@@ -115,8 +115,8 @@ resource "kubernetes_deployment" "airflow_depl" {
             name = "MINIO_ACCESS_KEY"
             value_from {
               secret_key_ref {
-                name     = "airflow-minio-key"
-                key      = "access_key"
+                name     = "airflow-minio-secrets"
+                key      = "MINIO_ACCESS_KEY"
                 optional = false
               }
             }
@@ -125,8 +125,8 @@ resource "kubernetes_deployment" "airflow_depl" {
             name = "MINIO_SECRET_KEY"
             value_from {
               secret_key_ref {
-                name     = "airflow-minio-key"
-                key      = "secret_key"
+                name     = "airflow-minio-secrets"
+                key      = "MINIO_SECRET_KEY"
                 optional = false
               }
             }
