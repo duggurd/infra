@@ -3,7 +3,7 @@ echo "$pod_id"
 
 if [ -n "$pod_id" ]; then
     # remove and add dags
-    kubectl exec "$pod_id" -n airflow -c airflow -- rm -rf /opt/airflow/dags/*
+    kubectl exec "$pod_id" -n airflow -c airflow -- find /opt/airflow/dags -mindepth 1 -delete
     kubectl cp ../dags "$pod_id":/opt/airflow -c airflow -n airflow
 else 
     echo "could not find 'airflow-depl' pod"
