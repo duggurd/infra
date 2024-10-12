@@ -3,8 +3,10 @@ from minio import Minio
 import time
 import pandas as pd
 import io
+import os
 from minio.commonconfig import Tags
 from minio.datatypes import Object
+import s3fs
 
 from utils.minio_utils import (
     get_non_ingested_objects, 
@@ -18,7 +20,8 @@ from finn_metadata.metadata_schemas import (
     SEARCH_ID_JOB_FULLTIME
 )
 
-from finn_metadata.constants import INGESTION_BUCKET, RAW_BUCKET
+from finn_metadata.constants import INGESTION_BUCKET, RAW_BUCKET, BRONZE_BUCKET
+
 def transform_finn_ads_metadata_file(client: Minio, search_key: str, ingest_object: Object):
     print(f"working on {ingest_object.object_name}")
 
@@ -46,49 +49,24 @@ def transform_finn_ads_metadata_file(client: Minio, search_key: str, ingest_obje
 
     df["source_file"] = ingest_object.object_name
 
-    # all good, we upload the file and mark the original file as ingested
-    
-    print("creating parquet buffer")
-    parquet_buffer = io.BytesIO()
-    
-    # this failed to raise and excepption when no parquet pacakge was available
-    try:
-        df.to_parquet(parquet_buffer, index=False, compression="gzip")
-    except Exception as e:
-        print(e)
-        raise e
+    table_name = search_key.replace("SEARCH_ID_", "").lower()
+    table_path = f"s3://{BRONZE_BUCKET}/finn/ads/{table_name}"
 
-    parquet_buffer.seek(0)
+    storage_options = {
+        "key": os.environ.get("MINIO_ACCESS_KEY"),
+        "secret": os.environ.get("MINIO_SECRET_KEY"),
+        "endpoint_url":  f"http://{os.environ.get('MINIO_ENDPOINT')}"
+    }
 
-    raw_object_name = f"finn/finn_ads_metadata/{search_key}/finn_ads_metadata__{search_key}_{time.time_ns()}.gzip.parquet"
-
-    print(f"uploading {raw_object_name}")
-    
-    # throws if failed
-    client.put_object(
-        bucket_name=RAW_BUCKET,
-        object_name=raw_object_name,
-        data=parquet_buffer,
-        length=-1,
-        part_size=20*1024*1024,
-        content_type="application/vnd.apache.parquet",
+    df.to_parquet(
+        table_path,
+        storage_options=storage_options,
+        index=False, 
+        compression="gzip", 
+        partition_cols=["year", "month"]
     )
-    print(f"successfully uploaded {raw_object_name}")
 
-    # assert object was created successfully, then tag original source object
-    
-    stat = client.stat_object(bucket_name=RAW_BUCKET, object_name=raw_object_name)
-
-    if stat.size is None or stat.size == 0:        
-        # cleanup
-        # remove the empty object, if it was created
-        try:
-            client.remove_object(bucket_name=RAW_BUCKET, object_name=raw_object_name)
-        except Exception as e:
-            print(e)
-        
-        raise Exception(f"failed to upload {raw_object_name}, size is 0")
-
+    # all good, mark the original file as ingested
     print(f"tagging {ingest_object.object_name}")
 
     # tag source file as ingested

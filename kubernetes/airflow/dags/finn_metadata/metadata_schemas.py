@@ -49,7 +49,8 @@ def SEARCH_ID_CAR_USED(df: pd.DataFrame) -> pd.DataFrame:
     for nested_column in nested_columns:
         df = extract_nested_df_values(df, nested_column, True)
 
-    # validate schema and change dtypes to target dtypes
+    if "year" in df.columns:
+        df["car_year"] = df["year"]
 
     return df
 
@@ -98,6 +99,15 @@ def common_metadata_df_cleaning(df: pd.DataFrame, truncate_datetimes_to_ms: bool
         df["published"] =  pd.to_datetime(df["published"], unit="ms")
     else:
         df["published"] = pd.NA
+
+    # add partitioning cols
+    if "year" in df.columns:
+        df["_year"] = df["year"]
+    if "month" in df.columns:
+        df["_month"] = df["month"]
+
+    df["year"] = df["timestamp"].dt.year
+    df["month"] = df["timestamp"].dt.month
 
     df["ingestion_ts"] = pd.Timestamp.now()
     
