@@ -3,3 +3,5 @@ pandas
 requests
 bs4
 psycopg2-binary
+pyarrow
+s3fs
