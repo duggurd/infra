@@ -1,23 +1,18 @@
-from httpx import head
 from minio import Minio
 from minio.datatypes import Object
 import os
 from io import BytesIO
 import json
-
 import pandas
 
-def connect_to_minio(bucket_name) -> Minio:
+def connect_to_minio() -> Minio:
     minio_access_key = os.environ.get("MINIO_ACCESS_KEY")
     minio_secret_key = os.environ.get("MINIO_SECRET_KEY")
     minio_endpoint = os.environ.get("MINIO_ENDPOINT")
 
-    assert minio_access_key is not None, "Missing minio access key"
-    assert minio_secret_key is not None, "Missing minio secret key"
-    assert minio_endpoint is not None, "Missing minio endpoint variable"
-    assert bucket_name is not None, "Missing bucket name variable"
-
-    print("connecting to minio")
+    assert minio_access_key is not None, "Missing MINIO_ACCESS_KEY environment variable"
+    assert minio_secret_key is not None, "Missing MINIO_SECRET_KEY environment variable"
+    assert minio_endpoint is not None, "Missing MINIO_ENDPOINT environment variable"
 
     client = Minio(
         endpoint=minio_endpoint,
@@ -25,23 +20,6 @@ def connect_to_minio(bucket_name) -> Minio:
         secret_key=minio_secret_key,
         secure=False
     )
-
-    print("Connected to minio")
-
-
-    # Need to move this outside of this function
-    if not client.bucket_exists(bucket_name):
-        client.make_bucket(bucket_name)
-        print(f"created bucket: {bucket_name}")
-    else:
-        print(f"bucket: {bucket_name} already exists")
-
-    RAW_BUCKET_NAME="raw"
-    if not client.bucket_exists(RAW_BUCKET_NAME):
-        client.make_bucket(RAW_BUCKET_NAME)
-        print(f"created bucket: {RAW_BUCKET_NAME}")
-    else:
-        print(f"bucket: {RAW_BUCKET_NAME} already exists")
     
     return client
 
