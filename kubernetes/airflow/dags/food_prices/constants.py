@@ -1,0 +1,1 @@
+INGESTION_BUCKET = "ingestion"

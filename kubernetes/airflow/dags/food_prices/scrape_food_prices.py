@@ -10,8 +10,7 @@ import requests
 
 from utils.minio_utils import connect_to_minio, upload_json
 
-INGESTION_BUCKET_NAME = os.environ["INGESTION_BUCKET_NAME"]
-assert INGESTION_BUCKET_NAME is not None, "INGESTION_BUCKET_NAME is not set"
+from food_prices.constants import INGESTION_BUCKET
 
 class Category:
     bakery = "Bakeri"
@@ -86,13 +85,6 @@ def url_filter_options(chain_id: int):
 
     return URL
 
-def decode_b64_secret_from_env(env_name):
-    from base64 import b64decode
-    secret = os.environ.get(env_name)
-    assert secret is not None, f"{env_name} not found!"
-
-    return str(b64decode(secret), encoding="utf-8")
-
 def scrape_food_price(client: Minio, chain_id: str, category: str):
     category_name = Category().__getattribute__(category)
     object_name = f"ngdata/food_prices/food_prices__{chain_id}_{category}_{time.time_ns()}.json"
@@ -114,7 +106,7 @@ def scrape_food_price(client: Minio, chain_id: str, category: str):
         upload_json(
             json_dict=resp.json(), 
             client=client, 
-            bucket_name=INGESTION_BUCKET_NAME, 
+            bucket_name=INGESTION_BUCKET, 
             object_name=object_name
         )
 
@@ -128,7 +120,7 @@ def scrape_food_price(client: Minio, chain_id: str, category: str):
     catchup=False
 )
 def scrape_food_prices():
-    client = connect_to_minio(INGESTION_BUCKET_NAME)
+    client = connect_to_minio()
     
     with open("/opt/airflow/dags/food_prices/food_price_scraper_config.json") as f:
         configs = json.load(f)
