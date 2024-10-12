@@ -7,15 +7,17 @@ in pkgs.mkShell {
     openssl
 
     (python311.withPackages(ps: with ps; [
+      # all deps are dev deps
       ipykernel
       ipython
       jupyter
       notebook
 
-      build
+      s3fs
+      # build
       pandas
       minio
-      clickhouse-connect
+      # clickhouse-connect
       sqlalchemy
       psycopg2
       pyarrow
