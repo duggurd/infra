@@ -23,7 +23,7 @@ resource "kubernetes_persistent_volume_claim" "minio_pvc" {
 
 resource "kubernetes_deployment" "minio_deployment" {
   metadata {
-    name = "minio"
+    name      = "minio"
     namespace = "airflow"
   }
   spec {
@@ -94,13 +94,13 @@ resource "kubernetes_service" "minio_svc" {
     }
     type = "NodePort"
     port {
-    name = "web"
+      name        = "web"
       port        = 9090
       target_port = 9090
       node_port   = 30090
     }
     port {
-      name = "api"
+      name        = "api"
       port        = 9000
       target_port = 9000
       node_port   = 30091
