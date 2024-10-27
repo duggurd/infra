@@ -1,5 +1,6 @@
 locals {
   name = "airflow"
+  db_name = "postgres"
 }
 
 resource "kubernetes_namespace" "airflow" {
@@ -14,11 +15,10 @@ resource "kubernetes_config_map" "airflow_config" {
     namespace = kubernetes_namespace.airflow.metadata[0].name
   }
   data = {
-    "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN" = var.AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+    "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN" = "postgresql+psycopg2://airflow:${var.POSTGRES_PASSWORD}@localhost:5432/airflow"
     "AIRFLOW__CORE__EXECUTOR"             = "LocalExecutor"
   }
 }
-
 
 resource "kubernetes_persistent_volume_claim" "airflow_dags_pvc" {
   metadata {
@@ -99,9 +99,8 @@ resource "kubernetes_deployment" "airflow" {
         }
       }
       spec {
-        hostname = local.name
         container {
-          name  = "postgres"
+          name  = local.db_name
           image = "postgres:alpine"
           env {
             name  = "POSTGRES_USER"
@@ -140,30 +139,10 @@ resource "kubernetes_deployment" "airflow" {
             }
           }
         }
-        # init_container {
-        #  name  = "wait-for-postgres"
-        #  image = "busybox"
-        #  command = [
-        #    "sh", "-c",
-        #    "until nc -z postgres 5432; do echo waiting for postgres; sleep 2; done;"
-        #  ]
-        #}
-
-        # init_container {
-        #  name              = "init-db"
-        #  image             = "127.0.0.1:30500/airflow:latest"
-        #  image_pull_policy = "Always"
-        #  env_from {
-        #    config_map_ref {
-        #      name = kubernetes_config_map.airflow_config.metadata[0].name
-        #    }
-        #  }
-        #  command = ["sh", "-c", "airflow db migrate"]
-        # }
 
         container {
           name              = "airflow"
-          image             = "homelab.kiko-ghoul.ts.net:30500/airflow:latest"
+          image             = "127.0.0.1:30500/airflow:latest"
           image_pull_policy = "Always"
           env_from {
             config_map_ref {

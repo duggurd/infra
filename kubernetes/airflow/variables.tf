@@ -2,9 +2,9 @@ variable "POSTGRES_PASSWORD" {
   type = string
 }
 
-variable "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN" {
-  type = string
-}
+# variable "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN" {
+#   type = string
+# }
 
 # variable "AIRFLOW__CORE__EXECUTOR" {
 #   type = string
