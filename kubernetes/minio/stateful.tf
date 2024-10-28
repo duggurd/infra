@@ -12,7 +12,7 @@ resource "kubernetes_namespace" "minio" {
 
 locals {
   replicas = 2
-  storage = "1Gi"
+  storage = "50Gi"
 }
 
 
@@ -75,7 +75,7 @@ resource "kubernetes_persistent_volume_claim" "minio" {
 
 resource "kubernetes_stateful_set" "minio" {
   timeouts {
-    create = "1m"
+    create = "2m"
   }
   metadata {
     name = "minio"
@@ -158,7 +158,7 @@ resource "kubernetes_stateful_set" "minio" {
         namespace = kubernetes_namespace.minio.metadata[0].name
       }
       spec {
-        access_modes = ["ReadWriteOnce"]
+        access_modes = ["ReadWriteMany"]
         resources {
           requests = {
             storage = local.storage
