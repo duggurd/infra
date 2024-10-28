@@ -1,5 +1,6 @@
 from airflow.decorators import dag, task
 from datetime import datetime
+from airflow.models.param import Param
 
 
 @task.virtualenv(
@@ -7,9 +8,9 @@ from datetime import datetime
     requirements=["./requirements.txt"],
     system_site_packages=False,
     venv_cache_path="/tmp/venv/cache/job_ads",
-    pip_install_options=["--require-virtualenv", "--isolated"]
+    pip_install_options=["--require-virtualenv", "--isolated"],
 )
-def get_job_ads_metadata_task():
+def get_job_ads_metadata_task(params= None):
     import sys
     import json
     sys.path.append('/opt/airflow/dags/finn_job_ads')
@@ -27,7 +28,7 @@ def get_job_ads_metadata_task():
     
     # TODO: Make tasks dynamic with occupations
     for occupation in occupations:
-        get_job_ads_metadata(occupation=occupation, published="1")
+        get_job_ads_metadata(occupation=occupation, published="1" if params is not None and params["published_today"] is True else "0")
 
 @task.virtualenv(
     task_id="get_ads_content", 
@@ -52,7 +53,10 @@ def get_ads_content_task():
     start_date=datetime(2024, 1, 1), 
     schedule_interval="0 0 * * *",
     catchup=False,
-    max_active_runs=1
+    max_active_runs=1,
+    params = {
+        "published_today": Param(True, type="boolean")
+    }
 )
 def dag():
     get_job_ads_metadata_task() >> get_ads_content_task()

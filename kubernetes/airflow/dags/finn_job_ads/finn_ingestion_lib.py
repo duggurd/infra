@@ -1,39 +1,34 @@
+import uuid
 from bs4 import BeautifulSoup as bs
 import os
-import sqlalchemy
-from sqlalchemy import text
 import pandas as pd
 from datetime import datetime
 import requests
 from enum import Enum
+import s3fs
 
-from utils.general import extract_nested_df_value
+# from utils.general import extract_nested_df_value
+storage_options = None
+if os.environ.get("AIRFLOW_HOME") is not None:
+    from airflow.hooks.base_hook import BaseHook
+
+    connection = BaseHook.get("homelab-minio")
+    
+    storage_options = {
+        "key": connection.login,
+        "secret": connection.password,
+        "endpoint_url":  f"http://{connection.host}"
+    }
+else:
+    storage_options = {
+        "key": os.environ["MINIO_ACCESS_KEY"],
+        "secret": os.environ["MINIO_SECRET_KEY"],
+        "endpoint_url":  f"http://{os.environ.get('MINIO_AP')}"
+    }
 
 class AdType(Enum):
     POSITION = "position"
     OTHER = "other"
-
-def get_ingestion_db_sqlalchemy_engine():
-    connection_string = os.environ.get("INGESTION_DB_SQL_ALCHEMY_CONN")
-    assert connection_string is not None, "INGESTION_DB_SQL_ALCHEMY_CONN is not set"
-    return sqlalchemy.create_engine(connection_string)
-
-def append_df_to_sqlalchemy_table(df, conn, table_name, schema, dtype=None): 
-    df["created_at"] = datetime.now()
-
-    ret = df.to_sql(
-        table_name, 
-        con=conn, 
-        schema=schema,
-        if_exists="append", 
-        index=False,
-        dtype=dtype
-    )
-
-    conn.commit()
-
-    print(f"inserted {ret} rows into {schema}.{table_name}")
-
 
 
 def get_url(url):
@@ -58,12 +53,16 @@ def get_ad_html(ad_url: str):
     return content
 
 
-def parse_ad_html(html, ad_type:AdType):
+def parse_ad_html(html, ad_type: AdType):
     """
     ad_type: "position" | "other"
     """
     record = {}
     soup = bs(html, "html.parser")
+
+    main_element = soup.find("main")
+    
+    """
     if ad_type == AdType.POSITION:
         article = soup.find("main").find_all("div", recursive=False)[1] # type: ignore
 
@@ -124,6 +123,9 @@ def parse_ad_html(html, ad_type:AdType):
             
             record["content"] = " ".join(contents)
 
+    """
+    record["html_main"] = str(main_element)
+
     return record
 
 def get_job_ads_metadata(occupation, published:str="1"):
@@ -140,61 +142,64 @@ def get_job_ads_metadata(occupation, published:str="1"):
             data = get_finn_metdata_page(page, occupation, published)
             df = pd.concat([df, pd.DataFrame(data["docs"])])
     
-    if "coordinates" in df.columns:
-        extract_nested_df_value(df, "longitude", "coordinates", "lon")
-        extract_nested_df_value(df, "latitude", "coordinates", "lat")
-    
 
-    df = df.drop(columns=["coordinates", "logo", "labels", "flags", "image", "extras"], errors="ignore")
-
-    if "timestamp" in df.columns:
-        df["timestamp"] = pd.to_datetime(df["timestamp"]/1000)
-    else: 
-        df["timestamp"] = None
-    if "published" in df.columns:
-        df["published"] = pd.to_datetime(df["published"]/1000)
-    else:
-        df["published"] = None
-
-    if "deadline" in df.columns:
-        df["deadline"] = pd.to_datetime(df["deadline"]/1000)
-    else:
-        df["deadline"] = None
-
+    df = df[["id", "timestamp", "canonical_url"]]
     df["occupation"] = occupation
 
-    conn = get_ingestion_db_sqlalchemy_engine().connect()
+    # if "coordinates" in df.columns:
+    #     extract_nested_df_value(df, "longitude", "coordinates", "lon")
+    #     extract_nested_df_value(df, "latitude", "coordinates", "lat")
+    
 
-    append_df_to_sqlalchemy_table(
-        df, 
-        conn,
-        "finn_job_ads__metadata",
-        "finn",
-        # dtype=dtype
+    # df = df.drop(columns=["coordinates", "logo", "labels", "flags", "image", "extras"], errors="ignore")
+
+    # if "timestamp" in df.columns:
+    #     df["timestamp"] = pd.to_datetime(df["timestamp"]/1000)
+    # else: 
+    #     df["timestamp"] = None
+    # if "published" in df.columns:
+    #     df["published"] = pd.to_datetime(df["published"]/1000)
+    # else:
+    #     df["published"] = None
+
+    # if "deadline" in df.columns:
+    #     df["deadline"] = pd.to_datetime(df["deadline"]/1000)
+    # else:
+    #     df["deadline"] = None
+
+    df.to_parquet(
+        f"s3://ingestion/finn/job_fulltime/ad_urls/{uuid.uuid1()}.zst.parquet",
+        storage_options=storage_options,
+        compression="zstd",
+        index=False
     )
 
 def get_ads_content():
-    conn = get_ingestion_db_sqlalchemy_engine().connect()
+    # get urls of ads that havent been ingested yet
+    all_ads_df = pd.read_parquet(
+        "s3://ingestion/finn/job_fulltime/ad_urls",
+        storage_options=storage_options,
+        columns=["id", "canonical_url"]
+    )
 
-    res = conn.execute(text("""
-        SELECT canonical_url, id 
-        FROM finn.finn_job_ads__metadata AS metadata 
-        WHERE
-            metadata.id not in (
-                select id 
-                from finn.finn_job_ads__content
-            );
-    """))
+    try:
+        ingested_ads_df = pd.read_parquet(
+            "s3://ingestion/finn/job_fulltime/content",
+            storage_options=storage_options,
+            columns=["id"]
+        )
 
-    rows = res.fetchall()
+        new_ads = all_ads_df.merge(ingested_ads_df, how="left", on="id", indicator=True).query("_merge == 'left_only'")
+    except FileNotFoundError:
+        new_ads = all_ads_df
 
-    df = None
+    ad_content_df = None
 
-    for row in rows:
+    for _, row in new_ads.iterrows():
 
         data = []
-        canonical_url = row[0]
-        finnkode = row[1]
+        canonical_url = row["canonical_url"]
+        finnkode = row["id"]
    
         try:
             html = get_ad_html(canonical_url)
@@ -207,20 +212,21 @@ def get_ads_content():
         record = parse_ad_html(html, ad_type)
 
         record["id"] = finnkode
+        record["ingestion_ts"] = datetime.now()
 
         data.append(record)
 
-        if df is None:
-            df = pd.DataFrame(data)
+        if ad_content_df is None:
+            ad_content_df = pd.DataFrame(data)
         else:
-            df = pd.concat([df, pd.DataFrame(data)])
+            ad_content_df = pd.concat([ad_content_df, pd.DataFrame(data)])
 
-    append_df_to_sqlalchemy_table(
-        df,
-        conn, 
-        "finn_job_ads__content",
-        "finn",
-        # dtype=dtype
-    )
-    
-    conn.close()
+    if ad_content_df is not None:
+        ad_content_df.to_parquet(
+            f"s3://ingestion/finn/job_fulltime/ad_html/{uuid.uuid1()}.zst.parquet",
+            storage_options=storage_options,
+            compression="zstd",
+            index=False
+        )
+    else:
+        print("No new ad content, skipping ingestion")
