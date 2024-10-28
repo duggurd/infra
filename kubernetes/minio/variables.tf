@@ -17,3 +17,8 @@ variable "minio_secret_key" {
   description = "MinIO Secret Key"
   type        = string
 }
+
+
+variable "nodes" {
+  default = ["homelab.alpine1", "homelab.alpine2"]
+}
