@@ -1,11 +1,14 @@
 locals {
-  name = "airflow"
+  name    = "airflow"
   db_name = "postgres"
 }
 
 resource "kubernetes_namespace" "airflow" {
   metadata {
     name = local.name
+  }
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
@@ -22,7 +25,7 @@ resource "kubernetes_config_map" "airflow_config" {
 
 resource "kubernetes_persistent_volume_claim" "airflow_dags_pvc" {
   metadata {
-    name      = "airflow-pvc"
+    name      = "airflow-dags"
     namespace = kubernetes_namespace.airflow.metadata[0].name
   }
   spec {
@@ -39,7 +42,7 @@ resource "kubernetes_persistent_volume_claim" "airflow_dags_pvc" {
 
 resource "kubernetes_persistent_volume_claim" "airflow_logs_pvc" {
   metadata {
-    name      = "airflow-logs-pvc"
+    name      = "airflow-logs"
     namespace = kubernetes_namespace.airflow.metadata[0].name
   }
   spec {
@@ -55,16 +58,49 @@ resource "kubernetes_persistent_volume_claim" "airflow_logs_pvc" {
 }
 
 
+
+resource "kubernetes_persistent_volume" "airflow_db_pv" {
+  metadata {
+    name = "airflow-db"
+  }
+  spec {
+    access_modes = ["ReadWriteOnce"]
+    capacity = {
+      storage = "4Gi"
+    }
+    persistent_volume_reclaim_policy = "Retain"
+    persistent_volume_source {
+      local {
+        path = "/mnt/airflow_db"
+      }
+    }
+    storage_class_name = "local-path"
+    node_affinity {
+      required {
+        node_selector_term {
+          match_expressions {
+            operator = "In"
+            key      = "kubernetes.io/hostname"
+            values   = ["homelab.alpine1"]
+          }
+        }
+      }
+    }
+  }
+}
+
 resource "kubernetes_persistent_volume_claim" "airflow_db_pvc" {
   metadata {
     name      = "airflow-db-pvc"
     namespace = kubernetes_namespace.airflow.metadata[0].name
   }
   spec {
+    storage_class_name = "local-path"
+    volume_name  = kubernetes_persistent_volume.airflow_db_pv.metadata[0].name
     access_modes = ["ReadWriteOnce"]
     resources {
       requests = {
-        storage = "4Gi"
+        storage = kubernetes_persistent_volume.airflow_db_pv.spec[0].capacity.storage
       }
       limits = {}
     }
@@ -74,9 +110,9 @@ resource "kubernetes_persistent_volume_claim" "airflow_db_pvc" {
 
 
 resource "kubernetes_deployment" "airflow" {
-    timeouts {
-      create = "1m"
-    }
+  timeouts {
+    create = "2m"
+  }
   metadata {
     name      = "airflow-depl"
     namespace = kubernetes_namespace.airflow.metadata[0].name
