@@ -1,18 +1,16 @@
+from airflow.hooks.base_hook import BaseHook
+
 from minio import Minio
 from minio.datatypes import Object
-import os
 from io import BytesIO
 import json
 import pandas
 
 def connect_to_minio() -> Minio:
-    minio_access_key = os.environ.get("MINIO_ACCESS_KEY")
-    minio_secret_key = os.environ.get("MINIO_SECRET_KEY")
-    minio_endpoint = os.environ.get("MINIO_ENDPOINT")
-
-    assert minio_access_key is not None, "Missing MINIO_ACCESS_KEY environment variable"
-    assert minio_secret_key is not None, "Missing MINIO_SECRET_KEY environment variable"
-    assert minio_endpoint is not None, "Missing MINIO_ENDPOINT environment variable"
+    connection = BaseHook.get("homelab-minio")
+    minio_endpoint = connection.host
+    minio_access_key = connection.login
+    minio_secret_key = connection.password
 
     client = Minio(
         endpoint=minio_endpoint,
