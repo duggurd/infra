@@ -1,16 +1,5 @@
 from airflow.decorators import dag, task
-
-from minio import Minio
-from urllib import parse
 from datetime import datetime
-import json
-import time
-import os
-import requests
-
-from utils.minio_utils import connect_to_minio, upload_json
-
-from food_prices.constants import INGESTION_BUCKET
 
 class Category:
     bakery = "Bakeri"
@@ -48,6 +37,8 @@ def create_url_products(
         category_name: str|None = None, 
         page_size: str = "50", 
     ):
+
+    from urllib import parse
     
     relative = f"/products/{chain_id}"
     
@@ -73,6 +64,7 @@ def create_url_products(
     return URL
 
 def url_filter_options(chain_id: int):
+    from urllib import parse
     
     params = {
         "page_size": "0",
@@ -85,9 +77,14 @@ def url_filter_options(chain_id: int):
 
     return URL
 
-def scrape_food_price(client: Minio, chain_id: str, category: str):
+def scrape_food_price(client, chain_id: str, category: str):
+    import uuid
+    import requests
+    from utils.minio_utils import upload_json
+    from food_prices.constants import INGESTION_BUCKET
+
     category_name = Category().__getattribute__(category)
-    object_name = f"ngdata/food_prices/food_prices__{chain_id}_{category}_{time.time_ns()}.json"
+    object_name = f"ngdata/food_prices/food_prices__{chain_id}_{category}_{uuid.uuid1()}.json"
 
     URL = create_url_products(
         page="1", 
@@ -120,7 +117,7 @@ def scrape_food_price(client: Minio, chain_id: str, category: str):
     catchup=False
 )
 def scrape_food_prices():
-    client = connect_to_minio()
+    import json
     
     with open("/opt/airflow/dags/food_prices/food_price_scraper_config.json") as f:
         configs = json.load(f)
@@ -128,9 +125,24 @@ def scrape_food_prices():
     for config in configs["configs"]:
         chain_id = config["chain_id"]
         for category in config["categories"]:
-            
-            @task(task_id=f"scrape_food_prices_{chain_id}_{category}")
+                
+            @task.virtualenv(
+                task_id=f"scrape_food_prices_{chain_id}_{category}",
+                requirements=[
+                    "requests"
+                    "minio",
+                ],
+                system_site_packages=False,
+                venv_cache_path="/tmp/venv/cache/food_prices",
+                pip_install_options=["--require-virtualenv", "--isolated"]
+            )
             def scrape(chain_id, category):
+                import sys
+                sys.path.append('/opt/airflow/dags/food_prices')
+                sys.path.append('/opt/airflow/dags')
+                
+                from utils.minio_utils import connect_to_minio
+                client = connect_to_minio()
                 scrape_food_price(client, chain_id, category)
     
             scrape(chain_id, category)
