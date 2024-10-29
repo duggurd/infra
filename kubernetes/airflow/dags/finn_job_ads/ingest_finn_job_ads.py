@@ -1,6 +1,25 @@
 from airflow.decorators import dag, task
 from datetime import datetime
 from airflow.models.param import Param
+import os
+
+storage_options = None
+if os.environ.get("AIRFLOW_HOME") is not None:
+    from airflow.hooks.base_hook import BaseHook
+
+    connection = BaseHook.get_connection("homelab-minio")
+    
+    storage_options = {
+        "key": connection.login,
+        "secret": connection.password,
+        "endpoint_url":  f"http://{connection.host}"
+    }
+else:
+    storage_options = {
+        "key": os.environ["MINIO_ACCESS_KEY"],
+        "secret": os.environ["MINIO_SECRET_KEY"],
+        "endpoint_url":  f"http://{os.environ.get('MINIO_AP')}"
+    }
 
 
 @task.virtualenv(
@@ -10,15 +29,13 @@ from airflow.models.param import Param
     venv_cache_path="/tmp/venv/cache/job_ads",
     pip_install_options=["--require-virtualenv", "--isolated"],
 )
-def get_job_ads_metadata_task(params= None):
+def get_job_ads_metadata_task(storage_options, published_today):
     import sys
     import json
     sys.path.append('/opt/airflow/dags/finn_job_ads')
     sys.path.append('/opt/airflow/dags')
 
-    print(sys.path)
-
-    from utils.general import extract_nested_df_value
+    print("running metadata_task with published_today: ", published_today)
 
     from finn_ingestion_lib import get_job_ads_metadata
 
@@ -28,7 +45,11 @@ def get_job_ads_metadata_task(params= None):
     
     # TODO: Make tasks dynamic with occupations
     for occupation in occupations:
-        get_job_ads_metadata(occupation=occupation, published="1" if params is not None and params["published_today"] is True else "0")
+        get_job_ads_metadata(
+            occupation=occupation, 
+            published="1" if published_today else "",
+            storage_options=storage_options
+        )
 
 @task.virtualenv(
     task_id="get_ads_content", 
@@ -37,7 +58,7 @@ def get_job_ads_metadata_task(params= None):
     venv_cache_path="/tmp/venv/cache/job_ads",
     pip_install_options=["--require-virtualenv", "--isolated"]
 )
-def get_ads_content_task():
+def get_ads_content_task(storage_options):
     import sys
     sys.path.append('/opt/airflow/dags/finn_job_ads')
     sys.path.append('/opt/airflow/dags')
@@ -45,7 +66,7 @@ def get_ads_content_task():
     from finn_ingestion_lib import get_ads_content
 
     # TODO: Make tasks dynamic and map 1:1 to occupation metadata ingestion tasks
-    get_ads_content()
+    get_ads_content(storage_options=storage_options)
 
 
 @dag(
@@ -59,6 +80,6 @@ def get_ads_content_task():
     }
 )
 def dag():
-    get_job_ads_metadata_task() >> get_ads_content_task()
+    get_job_ads_metadata_task(storage_options, published_today="{{ params.published_today }}") >> get_ads_content_task(storage_options)
     
 dag()

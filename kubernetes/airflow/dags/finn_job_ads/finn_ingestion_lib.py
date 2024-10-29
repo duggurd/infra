@@ -8,23 +8,7 @@ from enum import Enum
 import s3fs
 
 # from utils.general import extract_nested_df_value
-storage_options = None
-if os.environ.get("AIRFLOW_HOME") is not None:
-    from airflow.hooks.base_hook import BaseHook
 
-    connection = BaseHook.get("homelab-minio")
-    
-    storage_options = {
-        "key": connection.login,
-        "secret": connection.password,
-        "endpoint_url":  f"http://{connection.host}"
-    }
-else:
-    storage_options = {
-        "key": os.environ["MINIO_ACCESS_KEY"],
-        "secret": os.environ["MINIO_SECRET_KEY"],
-        "endpoint_url":  f"http://{os.environ.get('MINIO_AP')}"
-    }
 
 class AdType(Enum):
     POSITION = "position"
@@ -128,8 +112,8 @@ def parse_ad_html(html, ad_type: AdType):
 
     return record
 
-def get_job_ads_metadata(occupation, published:str="1"):
-    
+def get_job_ads_metadata(occupation, storage_options, published:str="1"):
+    print("getting job ads metadata with published: ", published)
     # Bootstrapping for metadata
     data = get_finn_metdata_page(1, occupation, published)
 
@@ -145,6 +129,7 @@ def get_job_ads_metadata(occupation, published:str="1"):
 
     df = df[["id", "timestamp", "canonical_url"]]
     df["occupation"] = occupation
+    df["ingeston_ts"] = datetime.now()
 
     # if "coordinates" in df.columns:
     #     extract_nested_df_value(df, "longitude", "coordinates", "lon")
@@ -174,7 +159,7 @@ def get_job_ads_metadata(occupation, published:str="1"):
         index=False
     )
 
-def get_ads_content():
+def get_ads_content(storage_options):
     # get urls of ads that havent been ingested yet
     all_ads_df = pd.read_parquet(
         "s3://ingestion/finn/job_fulltime/ad_urls",

@@ -7,7 +7,7 @@ import json
 import pandas
 
 def connect_to_minio() -> Minio:
-    connection = BaseHook.get("homelab-minio")
+    connection = BaseHook.get_connection("homelab-minio")
     minio_endpoint = connection.host
     minio_access_key = connection.login
     minio_secret_key = connection.password
