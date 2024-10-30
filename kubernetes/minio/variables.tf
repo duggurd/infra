@@ -16,6 +16,12 @@ variable "minio_access_key" {
 variable "minio_secret_key" {
   description = "MinIO Secret Key"
   type        = string
+  sensitive = true
+}
+
+variable "minio_endpoint" {
+  description = "MinIO endpoint"
+  type        = string
 }
 
 

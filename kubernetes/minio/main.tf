@@ -11,4 +11,16 @@ terraform {
       "owner" = "terraform"
     }
   }
+  required_providers {
+      minio = {
+        source = "aminueza/minio"
+        version = "2.5.1"
+      }
+  }
+}
+
+provider "minio" {
+  minio_server = var.minio_endpoint
+  minio_user = var.minio_access_key
+  minio_password = var.minio_secret_key
 }
