@@ -169,7 +169,7 @@ def get_ads_content(storage_options):
 
     try:
         ingested_ads_df = pd.read_parquet(
-            "s3://ingestion/finn/job_fulltime/content",
+            "s3://ingestion/finn/job_fulltime/ad_html",
             storage_options=storage_options,
             columns=["id"]
         )

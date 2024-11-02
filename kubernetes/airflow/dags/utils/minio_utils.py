@@ -1,19 +1,17 @@
-from airflow.hooks.base_hook import BaseHook
-
 from minio import Minio
 from minio.datatypes import Object
 from io import BytesIO
 import json
 import pandas
+import gzip
 
-def connect_to_minio() -> Minio:
-    connection = BaseHook.get_connection("homelab-minio")
-    minio_endpoint = connection.host
-    minio_access_key = connection.login
-    minio_secret_key = connection.password
+def connect_to_minio(storage_options: dict) -> Minio:
+    minio_endpoint = storage_options["endpoint_url"]
+    minio_access_key = storage_options["key"]
+    minio_secret_key = storage_options["secret"]
 
     client = Minio(
-        endpoint=minio_endpoint,
+        endpoint=minio_endpoint.replace("http://", ""),
         access_key=minio_access_key,
         secret_key=minio_secret_key,
         secure=False
@@ -40,10 +38,15 @@ def upload_csv_df(df: pandas.DataFrame, client: Minio, bucket_name: str, object_
 
     print("successfull data upload to MinIO")
 
-def upload_json(json_dict: dict, client: Minio, bucket_name: str, object_name: str):
+def upload_json(json_dict: dict, client: Minio, bucket_name: str, object_name: str, compress_gzip=False):
 
     json_string = json.dumps(json_dict)
-    data = BytesIO(bytes(json_string, encoding="utf-8"))
+    if compress_gzip:
+        compressed_json_string = gzip.compress(json_string.encode("utf-8"))
+        data = BytesIO(compressed_json_string)
+        object_name += ".gz"
+    else:
+        data = BytesIO(bytes(json_string, encoding="utf-8"))
                     
     print("uploading data")
     

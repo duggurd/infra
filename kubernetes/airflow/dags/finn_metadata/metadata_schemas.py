@@ -100,14 +100,8 @@ def common_metadata_df_cleaning(df: pd.DataFrame, truncate_datetimes_to_ms: bool
     else:
         df["published"] = pd.NA
 
-    # add partitioning cols
-    if "year" in df.columns:
-        df["_year"] = df["year"]
-    if "month" in df.columns:
-        df["_month"] = df["month"]
-
-    df["year"] = df["timestamp"].dt.year
-    df["month"] = df["timestamp"].dt.month
+    df["y"] = df["timestamp"].dt.year
+    df["m"] = df["timestamp"].dt.month
 
     df["ingestion_ts"] = pd.Timestamp.now()
     

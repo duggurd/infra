@@ -1,12 +1,12 @@
 from minio import Minio
 
-import time
 import pandas as pd
-import io
 import os
 from minio.commonconfig import Tags
 from minio.datatypes import Object
+import gzip
 import s3fs
+import json
 
 from utils.minio_utils import (
     get_non_ingested_objects, 
@@ -22,14 +22,21 @@ from finn_metadata.metadata_schemas import (
 
 from finn_metadata.constants import INGESTION_BUCKET, RAW_BUCKET, BRONZE_BUCKET
 
-def transform_finn_ads_metadata_file(client: Minio, search_key: str, ingest_object: Object):
-    print(f"working on {ingest_object.object_name}")
+def transform_finn_ads_metadata_file(client: Minio, search_key: str, ingest_object: Object, storage_options):
+    object_name = ingest_object.object_name
+    print(f"working on {object_name}")
 
-    assert ingest_object.object_name is not None, f"missing object_name, somehow!"
+    assert object_name is not None, f"missing object_name, somehow!"
 
-    data = client.get_object(bucket_name=INGESTION_BUCKET, object_name=ingest_object.object_name).json()
+    data = client.get_object(bucket_name=INGESTION_BUCKET, object_name=object_name).data
 
-    df = pd.DataFrame(data["docs"])
+    if ".gz" in object_name:
+        decompressed = gzip.decompress(data)
+        json_data = json.loads(decompressed)
+    else:
+        json_data = json.loads(data)
+
+    df = pd.DataFrame(json_data["docs"])
 
     # main transformations
     print("main transformation")
@@ -50,20 +57,14 @@ def transform_finn_ads_metadata_file(client: Minio, search_key: str, ingest_obje
     df["source_file"] = ingest_object.object_name
 
     table_name = search_key.replace("SEARCH_ID_", "").lower()
-    table_path = f"s3://{BRONZE_BUCKET}/finn/ads/{table_name}"
-
-    storage_options = {
-        "key": os.environ.get("MINIO_ACCESS_KEY"),
-        "secret": os.environ.get("MINIO_SECRET_KEY"),
-        "endpoint_url":  f"http://{os.environ.get('MINIO_ENDPOINT')}"
-    }
+    table_path = f"s3://{BRONZE_BUCKET}/finn/{table_name}/ad_metadata/"
 
     df.to_parquet(
         table_path,
         storage_options=storage_options,
         index=False, 
-        compression="gzip", 
-        partition_cols=["year", "month"]
+        compression="zstd", 
+        partition_cols=["y", "m"]
     )
 
     # all good, mark the original file as ingested
@@ -75,14 +76,14 @@ def transform_finn_ads_metadata_file(client: Minio, search_key: str, ingest_obje
 
     client.set_object_tags(
         bucket_name=INGESTION_BUCKET,
-        object_name=ingest_object.object_name,
+        object_name=object_name,
         tags=tags
     )
 
     print(f"successfully tagged {ingest_object.object_name}")
 
 
-def transform_finn_ads_metadata(client: Minio, search_key):
+def transform_finn_ads_metadata(client: Minio, search_key, storage_options):
 
     print("transforming data")
 
@@ -90,7 +91,10 @@ def transform_finn_ads_metadata(client: Minio, search_key):
     # ingest and transform non ingested files
     # Treat upload and tagging as a single transaction if either fails, roll back
 
-    objects = get_non_ingested_objects(client, "ingestion", f"finn/{search_key}/")
+    category = search_key.replace("SEARCH_ID_", "").lower() 
+    prefix = f"finn/{category}/ad_metadata/"
+
+    objects = get_non_ingested_objects(client, bucket_name="ingestion", prefix=prefix)
 
     if objects != []:
         print(f"Transforming {[object.object_name for object in objects]}")
@@ -99,4 +103,4 @@ def transform_finn_ads_metadata(client: Minio, search_key):
         return
     
     for ingest_object in objects:
-        transform_finn_ads_metadata_file(client, search_key, ingest_object)
+        transform_finn_ads_metadata_file(client, search_key, ingest_object, storage_options)

@@ -47,7 +47,7 @@ def get_job_ads_metadata_task(storage_options, published_today):
     for occupation in occupations:
         get_job_ads_metadata(
             occupation=occupation, 
-            published="1" if published_today else "",
+            published="" if published_today == "False" or published_today == False else "1",
             storage_options=storage_options
         )
 

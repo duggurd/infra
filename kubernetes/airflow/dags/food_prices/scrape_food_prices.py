@@ -1,5 +1,25 @@
 from airflow.decorators import dag, task
 from datetime import datetime
+import os
+
+storage_options = {}
+if os.environ.get("AIRFLOW_HOME") is not None:
+    from airflow.hooks.base_hook import BaseHook
+
+    connection = BaseHook.get_connection("homelab-minio")
+    
+    storage_options = {
+        "key": connection.login,
+        "secret": connection.password,
+        "endpoint_url":  f"http://{connection.host}"
+    }
+else:
+    storage_options = {
+        "key": os.environ["MINIO_ACCESS_KEY"],
+        "secret": os.environ["MINIO_SECRET_KEY"],
+        "endpoint_url":  f"http://{os.environ.get('MINIO_AP')}"
+    }
+
 
 class Category:
     bakery = "Bakeri"
@@ -84,7 +104,7 @@ def scrape_food_price(client, chain_id: str, category: str):
     from food_prices.constants import INGESTION_BUCKET
 
     category_name = Category().__getattribute__(category)
-    object_name = f"ngdata/food_prices/food_prices__{chain_id}_{category}_{uuid.uuid1()}.json"
+    object_name = f"ngdata/food_prices/{category}/{chain_id}_{uuid.uuid1()}.json"
 
     URL = create_url_products(
         page="1", 
@@ -104,7 +124,8 @@ def scrape_food_price(client, chain_id: str, category: str):
             json_dict=resp.json(), 
             client=client, 
             bucket_name=INGESTION_BUCKET, 
-            object_name=object_name
+            object_name=object_name,
+            compress_gzip=True
         )
 
     else: 
@@ -142,7 +163,7 @@ def scrape_food_prices():
                 sys.path.append('/opt/airflow/dags')
                 
                 from utils.minio_utils import connect_to_minio
-                client = connect_to_minio()
+                client = connect_to_minio(storage_options)
                 scrape_food_price(client, chain_id, category)
     
             scrape(chain_id, category)
