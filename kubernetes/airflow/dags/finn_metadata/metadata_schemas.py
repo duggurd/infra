@@ -49,9 +49,6 @@ def SEARCH_ID_CAR_USED(df: pd.DataFrame) -> pd.DataFrame:
     for nested_column in nested_columns:
         df = extract_nested_df_values(df, nested_column, True)
 
-    if "year" in df.columns:
-        df["car_year"] = df["year"]
-
     return df
 
 def SEARCH_ID_JOB_FULLTIME(df: pd.DataFrame) -> pd.DataFrame:
