@@ -1,7 +1,7 @@
 resource "kubernetes_cron_job_v1" "sync_minio_to_s3" {
   metadata {
     name      = "sync-minio-to-s3"
-    namespace = "airflow"
+    namespace = kubernetes_namespace.minio.metadata[0].name
   }
 
   spec {
@@ -10,7 +10,7 @@ resource "kubernetes_cron_job_v1" "sync_minio_to_s3" {
     job_template {
       metadata {
         name      = "mirror-minio-s3"
-        namespace = "airflow"
+        namespace = kubernetes_namespace.minio.metadata[0].name
       }
       spec {
         template {
@@ -25,7 +25,7 @@ resource "kubernetes_cron_job_v1" "sync_minio_to_s3" {
               command = [
                 "/bin/sh",
                 "-c",
-                "mc alias set minio http://minio.airflow:9000 $MINIO_ACCESS_KEY $MINIO_SECRET_KEY && mc alias set s3 https://s3.amazonaws.com $AWS_ACCESS_KEY_ID $AWS_SECRET_ACCESS_KEY && mc mirror minio/bronze s3/miniorepl/bronze"
+                "mc alias set minio http://minio.minio:9000 $MINIO_ACCESS_KEY $MINIO_SECRET_KEY && mc alias set s3 https://s3.amazonaws.com $AWS_ACCESS_KEY_ID $AWS_SECRET_ACCESS_KEY && mc mirror minio/bronze s3/miniorepl/bronze"
               ]
 
               env_from {

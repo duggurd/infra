@@ -1,7 +1,7 @@
 resource "kubernetes_secret" "minio_s3_sync_credentials" {
   metadata {
     name      = "minio-s3-sync-credentials"
-    namespace = "airflow"
+    namespace = kubernetes_namespace.minio.metadata[0].name
   }
 
   data = {
