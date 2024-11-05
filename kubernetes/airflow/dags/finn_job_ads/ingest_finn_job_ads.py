@@ -69,6 +69,25 @@ def get_ads_content_task(storage_options):
     get_ads_content(storage_options=storage_options)
 
 
+@task.virtualenv(
+    task_id="transform_ads_content", 
+    requirements=["./requirements.txt"], 
+    system_site_packages=False,
+    venv_cache_path="/tmp/venv/cache/job_ads",
+    pip_install_options=["--require-virtualenv", "--isolated"]
+)
+def transform_ads_content_task(storage_options):
+    import sys
+    sys.path.append('/opt/airflow/dags/finn_job_ads')
+    sys.path.append('/opt/airflow/dags')
+
+    from ad_content import extract_ad_content_from_html
+    from utils.minio_utils import connect_to_minio
+
+    client = connect_to_minio(storage_options)
+    extract_ad_content_from_html(client, storage_options)
+
+
 @dag(
     dag_id="finn_ads_ingestion", 
     start_date=datetime(2024, 1, 1), 
@@ -80,6 +99,6 @@ def get_ads_content_task(storage_options):
     }
 )
 def dag():
-    get_job_ads_metadata_task(storage_options, published_today="{{ params.published_today }}") >> get_ads_content_task(storage_options)
+    get_job_ads_metadata_task(storage_options, published_today="{{ params.published_today }}") >> get_ads_content_task(storage_options) >> transform_ads_content_task(storage_options)
     
 dag()
