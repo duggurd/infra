@@ -5,3 +5,6 @@ minio
 s3fs
 ipykernel
 pyarrow
+
+dbt-core
+dbt-duckdb

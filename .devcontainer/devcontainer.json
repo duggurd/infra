@@ -11,8 +11,10 @@
 		"vscode": {
 			"extensions": [
 				"ms-toolsai.jupyter",
-				"ms-python.python"
+				"ms-python.python",
+				"hashicorp.terraform"
 			]
 		}
-	}
+	},
+	"postAttachCommand": "export DBT_PROFILES_DIR='/workspaces/infra/dbt/profiles'"
 }
