@@ -1,0 +1,28 @@
+sources:
+  - name: finn_ad_metadata
+    meta:
+      external_location: "read_json('s3://ingestion/finn/{name}/ad_metadata/*', filename=true, format='unstructured')"
+    tables:
+      - name: car_used
+      - name: job_fulltime
+      - name: realestate_homes
+      - name: realestate_lettings
+  
+  - name: finn_ad_content
+    meta:
+      external_location: "read_parquet('s3://ingestion/finn/{name}/ad_html/*', compression='zstd', filename=true)"
+    tables:
+      - name: job_fulltime
+
+  - name: finn_ad_content_urls
+    meta:
+      external_location: "read_parquet('s3://ingestion/finn/{name}/ad_urls/*', compression='zstd', filename=true)"
+    tables:
+      - name: job_fulltime
+
+  # these are json lists of words, what formatting options are available to read it directly as table?
+  - name: stopwords
+    tables:
+      - name: stopwords
+        config:
+          external_location: "read_json('s3://ingestion/stopwords/*.json', format='array', filename=true)" 

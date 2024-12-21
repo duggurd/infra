@@ -1,0 +1,30 @@
+default:
+  outputs:
+    duckdb-memory:
+      type: duckdb
+      extensions:
+        - httpfs
+        - parquet
+
+      settings:
+        s3_access_key_id: "minioadmin"
+        s3_secret_access_key: "minioadmin"
+        s3_endpoint: "homelab.kiko-ghoul.ts.net:30091"
+        s3_use_ssl: false
+        s3_url_style: "path"
+    
+    # duckdb-tmp
+    #   type: duckdb
+    #   path: /tmp/database.duckdb
+    #   extensions:
+    #     - httpfs
+    #     - parquet
+
+    #   settings:
+    #     s3_access_key_id: minioadmin
+    #     s3_secret_access_key: minioadmin
+    #     s3_endpoint: homelab.kiko-ghoul.ts.net:30091
+    #     s3_use_ssl: false
+    #     s3_url_style: path
+  
+  target: duckdb-memory

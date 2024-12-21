@@ -2,9 +2,6 @@ resource "kubernetes_namespace" "spark" {
   metadata {
     name = "spark"
   }
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 

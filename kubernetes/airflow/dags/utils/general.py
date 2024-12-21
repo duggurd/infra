@@ -26,19 +26,19 @@ def extract_nested_df_values(df: pd.DataFrame, column:str, drop_column=False) ->
     the column must be a dict
     """
 
+    if column in df.columns:
+        # get all distinct keys in the column
+        keys = set()
 
-    # get all distinct keys in the column
-    keys = set()
+        for row in df[column]:
+            if isinstance(row, dict) and row is not None:
+                keys.update(row.keys())
 
-    for row in df[column]:
-        if isinstance(row, dict) and row is not None:
-            keys.update(row.keys())
-
-    for key in keys:
-        df[f"{column}_{key}"] = df[column].apply(lambda x: x.get(key) if isinstance(x, dict) else pd.NA)
+        for key in keys:
+            df[f"{column}_{key}"] = df[column].apply(lambda x: x.get(key) if isinstance(x, dict) else pd.NA)
 
 
-    if drop_column:
-        df = df.drop(columns=[column])
+        if drop_column:
+            df = df.drop(columns=[column])
 
     return df

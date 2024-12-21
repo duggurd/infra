@@ -1,0 +1,102 @@
+{
+    "json_structure(docs)": [
+        {
+            "type": "VARCHAR",
+            "id": "VARCHAR",
+            "main_search_key": "VARCHAR",
+            "heading": "VARCHAR",
+            "location": "VARCHAR",
+            "image": {
+                "url": "VARCHAR",
+                "path": "VARCHAR",
+                "height": "UBIGINT",
+                "width": "UBIGINT",
+                "aspect_ratio": "DOUBLE"
+            },
+            "flags": [
+                "VARCHAR"
+            ],
+            "styling": [
+                "VARCHAR"
+            ],
+            "timestamp": "UBIGINT",
+            "labels": [
+                {
+                    "id": "VARCHAR",
+                    "text": "VARCHAR",
+                    "type": "VARCHAR"
+                }
+            ],
+            "canonical_url": "VARCHAR",
+            "extras": [
+                "NULL"
+            ],
+            "logo": {
+                "url": "VARCHAR",
+                "path": "VARCHAR"
+            },
+            "price_suggestion": {
+                "amount": "UBIGINT",
+                "currency_code": "VARCHAR",
+                "price_unit": "VARCHAR"
+            },
+            "price_total": {
+                "amount": "UBIGINT",
+                "currency_code": "VARCHAR",
+                "price_unit": "VARCHAR"
+            },
+            "price_shared_cost": {
+                "amount": "UBIGINT",
+                "currency_code": "VARCHAR",
+                "price_unit": "VARCHAR"
+            },
+            "area_range": {
+                "size_from": "UBIGINT",
+                "size_to": "UBIGINT",
+                "unit": "VARCHAR",
+                "description": "VARCHAR"
+            },
+            "area_plot": {
+                "size": "UBIGINT",
+                "unit": "VARCHAR",
+                "description": "VARCHAR"
+            },
+            "organisation_name": "VARCHAR",
+            "local_area_name": "VARCHAR",
+            "number_of_bedrooms": "UBIGINT",
+            "owner_type_description": "VARCHAR",
+            "property_type_description": "VARCHAR",
+            "viewing_times": [
+                "VARCHAR"
+            ],
+            "coordinates": {
+                "lat": "DOUBLE",
+                "lon": "DOUBLE"
+            },
+            "ad_type": "UBIGINT",
+            "image_urls": [
+                "VARCHAR"
+            ],
+            "ad_id": "UBIGINT",
+            "price_range_suggestion": {
+                "amount_from": "UBIGINT",
+                "amount_to": "UBIGINT",
+                "currency_code": "VARCHAR"
+            },
+            "price_range_total": {
+                "amount_from": "UBIGINT",
+                "amount_to": "UBIGINT",
+                "currency_code": "VARCHAR"
+            },
+            "bedrooms_range": {
+                "start": "UBIGINT",
+                "end": "UBIGINT"
+            },
+            "area": {
+                "size": "UBIGINT",
+                "unit": "VARCHAR",
+                "description": "VARCHAR"
+            }
+        }
+    ]
+}

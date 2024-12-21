@@ -1,0 +1,45 @@
+{
+    "json_structure(docs)": [
+        {
+            "type": "VARCHAR",
+            "id": "VARCHAR",
+            "main_search_key": "VARCHAR",
+            "heading": "VARCHAR",
+            "location": "VARCHAR",
+            "flags": [
+                "VARCHAR"
+            ],
+            "timestamp": "UBIGINT",
+            "coordinates": {
+                "lat": "DOUBLE",
+                "lon": "DOUBLE"
+            },
+            "ad_type": "UBIGINT",
+            "labels": [
+                {
+                    "id": "VARCHAR",
+                    "text": "VARCHAR",
+                    "type": "VARCHAR"
+                }
+            ],
+            "canonical_url": "VARCHAR",
+            "extras": [
+                "NULL"
+            ],
+            "logo": {
+                "url": "VARCHAR",
+                "path": "VARCHAR"
+            },
+            "job_title": "VARCHAR",
+            "deadline": "UBIGINT",
+            "published": "UBIGINT",
+            "company_name": "VARCHAR",
+            "no_of_positions": "UBIGINT",
+            "ad_id": "UBIGINT",
+            "image": {
+                "url": "VARCHAR",
+                "path": "VARCHAR"
+            }
+        }
+    ]
+}

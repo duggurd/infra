@@ -34,3 +34,5 @@ __pycache__
 .terraform.lock.hcl
 
 *.tfvars
+
+logs

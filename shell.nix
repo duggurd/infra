@@ -5,6 +5,7 @@ in pkgs.mkShell {
     terraform
     kubectl
     openssl
+    clickhouse-cli
 
     (python311.withPackages(ps: with ps; 
       let
@@ -54,6 +55,9 @@ in pkgs.mkShell {
         sqlalchemy
         psycopg2
         pyarrow
+        beautifulsoup4
+        matplotlib
+        # pyspark
       ]
     ))
   ];

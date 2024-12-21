@@ -1,0 +1,1 @@
+copy (select json_structure(docs) from read_json('s3://ingestion/finn/car_used/ad_metadata/*') limit 1) to 'car_used_structure.json';
