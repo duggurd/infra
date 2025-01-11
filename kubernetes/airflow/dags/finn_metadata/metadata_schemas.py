@@ -64,6 +64,24 @@ def SEARCH_ID_JOB_FULLTIME(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def SEARCH_ID_REALESTATE_NEWBUILDINGS(df: pd.DataFrame) -> pd.DataFrame: 
+    df = common_metadata_df_cleaning(df)
+
+    nested_columns = [
+        "price_suggestion",
+        "price_total",
+        "price_shared_cost",
+        "area_range",
+        "area_plot",
+        "bedrooms_range"
+    ]
+
+    for nested_column in nested_columns:
+        df = extract_nested_df_values(df, nested_column, True)
+
+    return df
+
+
 def common_metadata_df_cleaning(df: pd.DataFrame, truncate_datetimes_to_ms: bool = True) -> pd.DataFrame:
 
     # Extract relevant data

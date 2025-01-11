@@ -17,7 +17,8 @@ from finn_metadata.metadata_schemas import (
     SEARCH_ID_REALESTATE_LETTINGS, 
     SEARCH_ID_REALESTATE_HOMES, 
     SEARCH_ID_CAR_USED, 
-    SEARCH_ID_JOB_FULLTIME
+    SEARCH_ID_JOB_FULLTIME,
+    SEARCH_ID_REALESTATE_NEWBUILDINGS
 )
 
 from finn_metadata.constants import INGESTION_BUCKET, RAW_BUCKET, BRONZE_BUCKET
@@ -45,6 +46,9 @@ def transform_finn_ads_metadata_file(client: Minio, search_key: str, ingest_obje
 
     elif search_key == "SEARCH_ID_REALESTATE_HOMES":
         df = SEARCH_ID_REALESTATE_HOMES(df)
+
+    elif search_key == "SEARCH_ID_REALESTATE_NEWBUILDINGS":
+        df = SEARCH_ID_REALESTATE_NEWBUILDINGS(df)
 
     elif search_key == "SEARCH_ID_CAR_USED":
         df = SEARCH_ID_CAR_USED(df)
