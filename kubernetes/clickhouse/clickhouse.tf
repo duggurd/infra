@@ -1,22 +1,22 @@
-variable "MINIO_ACCESS_KEY" {
-  type = string
-}
-
-variable "MINIO_SECRET__KEY" {
-  type = string
-  sensitive = true
-}
-
-resource "kubernetes_secret" "minio_credentials" {
-  metadata {
-    name = "minio-credentials"
-    namespace = kubernetes_namespace.clickhouse.metadata[0].name
-  }
-  data = {
-    "MINIO_ACCESS_KEY" = var.MINIO_ACCESS_KEY
-    "MINIO_SECRET_KEY" = var.MINIO_SECRET__KEY
-  }
-}
+# variable "MINIO_ACCESS_KEY" {
+#   type = string
+# }
+# 
+# variable "MINIO_SECRET__KEY" {
+#   type = string
+#   sensitive = true
+# }
+# 
+# resource "kubernetes_secret" "minio_credentials" {
+#   metadata {
+#     name = "minio-credentials"
+#     namespace = kubernetes_namespace.clickhouse.metadata[0].name
+#   }
+#   data = {
+#     "MINIO_ACCESS_KEY" = var.MINIO_ACCESS_KEY
+#     "MINIO_SECRET_KEY" = var.MINIO_SECRET__KEY
+#   }
+# }
 
 resource "kubernetes_namespace" "clickhouse" {
   metadata {
@@ -24,66 +24,66 @@ resource "kubernetes_namespace" "clickhouse" {
   }
 }
 
-resource "kubernetes_persistent_volume" "clickhouse" {
-  metadata {
-    name = "clickhouse"
-  }
-  spec {
-    access_modes = ["ReadWriteOnce"]
-    capacity = {
-      storage = "50Gi"
-    }
-    persistent_volume_reclaim_policy = "Retain"
-    storage_class_name               = "local-path"
-    persistent_volume_source {
-      local {
-        path = "/mnt/clickhouse"
-      }
-    }
-    node_affinity {
-      required {
-        node_selector_term {
-          match_expressions {
-            key      = "kubernetes.io/hostname"
-            operator = "In"
-            values   = ["homelab.alpine2"]
-          }
-        }
-      }
-    }
-  }
-}
-
-resource "kubernetes_persistent_volume" "clickhouse_conf" {
-  metadata {
-    name = "clickhouse-conf"
-  }
-  spec {
-    access_modes = [ "ReadWriteOnce" ]
-    capacity = {
-      storage = "128Mi" 
-    }
-    persistent_volume_reclaim_policy = "Retain"
-    storage_class_name = "local-path"
-    persistent_volume_source {
-      local {
-        path = "/mnt/clickhouse-conf"
-      }
-    }
-    node_affinity {
-      required {
-        node_selector_term {
-          match_expressions {
-            key      = "kubernetes.io/hostname"
-            operator = "In"
-            values   = ["homelab.alpine2"]
-          }
-        }
-      }
-    }
-  }
-}
-
+# resource "kubernetes_persistent_volume" "clickhouse" {
+#   metadata {
+#     name = "clickhouse"
+#   }
+#   spec {
+#     access_modes = ["ReadWriteOnce"]
+#     capacity = {
+#       storage = "50Gi"
+#     }
+#     persistent_volume_reclaim_policy = "Retain"
+#     storage_class_name               = "local-path"
+#     persistent_volume_source {
+#       local {
+#         path = "/mnt/clickhouse"
+#       }
+#     }
+#     node_affinity {
+#       required {
+#         node_selector_term {
+#           match_expressions {
+#             key      = "kubernetes.io/hostname"
+#             operator = "In"
+#             values   = ["homelab.alpine2"]
+#           }
+#         }
+#       }
+#     }
+#   }
+# }
+# 
+# resource "kubernetes_persistent_volume" "clickhouse_conf" {
+#   metadata {
+#     name = "clickhouse-conf"
+#   }
+#   spec {
+#     access_modes = [ "ReadWriteOnce" ]
+#     capacity = {
+#       storage = "128Mi" 
+#     }
+#     persistent_volume_reclaim_policy = "Retain"
+#     storage_class_name = "local-path"
+#     persistent_volume_source {
+#       local {
+#         path = "/mnt/clickhouse-conf"
+#       }
+#     }
+#     node_affinity {
+#       required {
+#         node_selector_term {
+#           match_expressions {
+#             key      = "kubernetes.io/hostname"
+#             operator = "In"
+#             values   = ["homelab.alpine2"]
+#           }
+#         }
+#       }
+#     }
+#   }
+# }
+# 
 resource "kubernetes_persistent_volume_claim" "clickhouse" {
   metadata {
     name      = "clickhouse"
@@ -96,47 +96,47 @@ resource "kubernetes_persistent_volume_claim" "clickhouse" {
         storage = "50Gi"
       }
     }
-    volume_name        = kubernetes_persistent_volume.clickhouse.metadata.0.name
-    storage_class_name = "local-path"
+    # volume_name        = kubernetes_persistent_volume.clickhouse.metadata.0.name
+    # storage_class_name = "local-path"
   }
   wait_until_bound = false
 }
-
-
-resource "kubernetes_persistent_volume_claim" "clickhouse_conf" {
-  metadata {
-    name = "clickhouse-conf"
-    namespace = kubernetes_namespace.clickhouse.metadata.0.name
-  }
-  spec {
-    access_modes = ["ReadWriteOnce"]
-    resources {
-      requests = {
-        storage = "128Mi"
-      }
-    }
-    volume_name = kubernetes_persistent_volume.clickhouse_conf.metadata[0].name
-    storage_class_name = "local-path"
-  } 
-  wait_until_bound = false
-}
-
-
-resource "kubernetes_persistent_volume_claim" "clickhouse_logs" {
-  metadata {
-    name = "clickhouse-logs"
-    namespace = kubernetes_namespace.clickhouse.metadata.0.name
-  }
-  spec {
-    access_modes = ["ReadWriteOnce"]
-    resources {
-      requests = {
-        storage = "128Mi" 
-      }
-    }
-  }
-  wait_until_bound = false
-}
+# 
+# 
+# resource "kubernetes_persistent_volume_claim" "clickhouse_conf" {
+#   metadata {
+#     name = "clickhouse-conf"
+#     namespace = kubernetes_namespace.clickhouse.metadata.0.name
+#   }
+#   spec {
+#     access_modes = ["ReadWriteOnce"]
+#     resources {
+#       requests = {
+#         storage = "128Mi"
+#       }
+#     }
+#     volume_name = kubernetes_persistent_volume.clickhouse_conf.metadata[0].name
+#     storage_class_name = "local-path"
+#   } 
+#   wait_until_bound = false
+# }
+# 
+# 
+# resource "kubernetes_persistent_volume_claim" "clickhouse_logs" {
+#   metadata {
+#     name = "clickhouse-logs"
+#     namespace = kubernetes_namespace.clickhouse.metadata.0.name
+#   }
+#   spec {
+#     access_modes = ["ReadWriteOnce"]
+#     resources {
+#       requests = {
+#         storage = "128Mi" 
+#       }
+#     }
+#   }
+#   wait_until_bound = false
+# }
 
 resource "kubernetes_deployment" "clickhouse" {
   timeouts {
@@ -171,13 +171,22 @@ resource "kubernetes_deployment" "clickhouse" {
         }
         container {
           name              = "clickhouse"
-          image             = "clickhouse/clickhouse-server:24.10.1.2812-alpine"
+          image             = "clickhouse/clickhouse-server:25.2-alpine"
           image_pull_policy = "IfNotPresent"
-          env_from {
-            secret_ref {
-              name = kubernetes_secret.minio_credentials.metadata[0].name
-            }
-          }
+          # env_from {
+          #   secret_ref {
+          #     name = kubernetes_secret.minio_credentials.metadata[0].name
+          #   }
+          # }
+          # env {
+          #   name = "CLICKHOUSE_USER"
+          #   value = "default"
+          # }
+          # env {
+          #   name = "CLICKHOUSE_PASSWORD"
+          #   value = "default"
+          # }
+          
           port {
             name = "interface"
             host_port      = 8123
@@ -192,14 +201,14 @@ resource "kubernetes_deployment" "clickhouse" {
             name       = "clickhouse-data"
             mount_path = "/var/lib/clickhouse/"
           }
-          volume_mount {
-            name = "clickhouse-conf"
-            mount_path = "/etc/clickhouse-server/"
-          }
-          volume_mount {
-            name = "clickhouse-logs"
-            mount_path = "/var/log/clickhouse-server/"
-          }
+          # volume_mount {
+          #   name = "clickhouse-conf"
+          #   mount_path = "/etc/clickhouse-server/"
+          # }
+          # volume_mount {
+          #   name = "clickhouse-logs"
+          #   mount_path = "/var/log/clickhouse-server/"
+          # }
           resources {
             requests = {
               cpu    = "1"
@@ -207,7 +216,7 @@ resource "kubernetes_deployment" "clickhouse" {
             }
             limits = {
               cpu    = "4"
-              memory = "5Gi"
+              memory = "7Gi"
             }
           }
         }
@@ -217,18 +226,18 @@ resource "kubernetes_deployment" "clickhouse" {
             claim_name = kubernetes_persistent_volume_claim.clickhouse.metadata[0].name
           }
         }
-        volume {
-          name = "clickhouse-conf" 
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume.clickhouse_conf.metadata[0].name
-          }
-        }
-        volume {
-          name = "clickhouse-logs"
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim.clickhouse_logs.metadata[0].name
-          }
-        }
+        # volume {
+        #   name = "clickhouse-conf" 
+        #   persistent_volume_claim {
+        #     claim_name = kubernetes_persistent_volume.clickhouse_conf.metadata[0].name
+        #   }
+        # }
+        # volume {
+        #   name = "clickhouse-logs"
+        #   persistent_volume_claim {
+        #     claim_name = kubernetes_persistent_volume_claim.clickhouse_logs.metadata[0].name
+        #   }
+        # }
       }
     }
   }
