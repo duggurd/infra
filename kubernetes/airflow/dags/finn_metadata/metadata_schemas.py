@@ -55,7 +55,7 @@ def SEARCH_ID_JOB_FULLTIME(df: pd.DataFrame) -> pd.DataFrame:
     df = common_metadata_df_cleaning(df)
 
     if "deadline" in df.columns:
-        df["deadline"] = pd.to_datetime(df["deadline"], unit="ms")
+        df["deadline"] = pd.to_datetime(df["deadline"], unit="ms", errors="coerce")
     else:
         df["deadline"] = pd.NA
 
