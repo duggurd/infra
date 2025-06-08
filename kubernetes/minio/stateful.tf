@@ -11,67 +11,10 @@ resource "kubernetes_namespace" "minio" {
 
 
 locals {
-  replicas = 2
+  replicas = 4
   storage = "50Gi"
 }
 
-
-resource "kubernetes_persistent_volume" "minio" {
-  for_each = toset(var.nodes)
-  
-  metadata {
-    name = "minio-${each.key}"
-    labels = {
-      app = "minio"
-    }
-  }
-  spec {
-    access_modes = ["ReadWriteMany"]
-    storage_class_name = "local-path"
-    capacity = {
-      storage = local.storage
-    }
-    
-    persistent_volume_reclaim_policy = "Retain"
-
-    persistent_volume_source {
-      local {
-        path = "/mnt/minio"
-      }
-    }
-
-    node_affinity {
-      required {
-        node_selector_term {
-          match_expressions {
-            key      = "kubernetes.io/hostname"   # Node label to match
-            operator = "In"                       # Using the "In" operator
-            values   = [each.key]                 # Match the specific node
-          }
-        }
-      }
-    }
-  }
-}
-
-resource "kubernetes_persistent_volume_claim" "minio" {
-  for_each = zipmap(range(local.replicas), [for pv in kubernetes_persistent_volume.minio : "${pv.metadata[0].name}"])
-  metadata {
-    name = "data-minio-${each.key}"
-    namespace = kubernetes_namespace.minio.metadata[0].name
-  }
-  spec {
-    storage_class_name = "local-path"
-    volume_name = each.value
-    access_modes = ["ReadWriteMany"]
-    resources {
-      requests = {
-        storage = local.storage
-      }
-    }
-  }
-  wait_until_bound = false
-}
 
 resource "kubernetes_stateful_set" "minio" {
   timeouts {
@@ -106,23 +49,32 @@ resource "kubernetes_stateful_set" "minio" {
       spec {
         affinity {
           pod_anti_affinity {
-            required_during_scheduling_ignored_during_execution {
-              label_selector {
-                match_expressions {
-                  key      = "app"
-                  operator = "In"
-                  values   = ["minio"]
+            preferred_during_scheduling_ignored_during_execution {
+              weight = 100
+              pod_affinity_term {
+                label_selector {
+                  match_expressions {
+                    key      = "app"
+                    operator = "In"
+                    values   = ["minio"]
+                  }
                 }
+                topology_key = "kubernetes.io/hostname"
               }
-              topology_key = "kubernetes.io/hostname"
             }
           }
         }
 
         container {
           name  = "minio"
-          image = "minio/minio:latest"
-          args = ["server", "http://minio-{0...${local.replicas - 1}}.minio:9000/data", "--console-address", ":9090"]
+          image = "minio/minio@sha256:a616cd8f37758b0296db62cc9e6af05a074e844cc7b5c0a0e62176d73828d440"
+          image_pull_policy = "IfNotPresent"
+          args = concat(
+            ["server"],
+            [for i in range(local.replicas) : "http://minio-${i}.minio.minio.svc.cluster.local:9000/data"],
+            ["--console-address", ":9090"]
+          )
+          
 
           port {
             name           = "api"
@@ -152,13 +104,13 @@ resource "kubernetes_stateful_set" "minio" {
       }
     }
     volume_claim_template {
-
       metadata {
         name = "data"
         namespace = kubernetes_namespace.minio.metadata[0].name
       }
       spec {
-        access_modes = ["ReadWriteMany"]
+        storage_class_name = "local-path"
+        access_modes = ["ReadWriteOnce"]
         resources {
           requests = {
             storage = local.storage
@@ -172,7 +124,7 @@ resource "kubernetes_stateful_set" "minio" {
 
 resource "kubernetes_service" "minio" {
   metadata {
-    name = "minio"
+    name = "minio-np"
     namespace = kubernetes_namespace.minio.metadata[0].name
   }
   spec {
@@ -191,6 +143,38 @@ resource "kubernetes_service" "minio" {
       port        = 9000
       target_port = 9000
       node_port   = 30091
+    }
+  }
+}
+
+resource "kubernetes_service" "minio_headless" {
+  metadata {
+    name      = "minio"
+    namespace = "minio"  # change as needed
+    labels = {
+      app = "minio"
+    }
+  }
+
+  spec {
+    cluster_ip = "None"  # This makes it headless
+
+    selector = {
+      app = "minio"
+    }
+
+    port {
+      name       = "api"
+      port       = 9000
+      target_port = 9000
+      protocol   = "TCP"
+    }
+
+    port {
+      name       = "console"
+      port       = 9090
+      target_port = 9090
+      protocol   = "TCP"
     }
   }
 }
