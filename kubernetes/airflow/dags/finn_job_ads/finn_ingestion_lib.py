@@ -117,6 +117,11 @@ def get_job_ads_metadata(occupation, storage_options, published:str="1"):
     # Bootstrapping for metadata
     data = get_finn_metdata_page(1, occupation, published)
 
+    if data["docs"] is None or data["docs"] == []:
+        print("No ads found")
+        return 
+    
+    print(f"Found {len(data['docs'])} ads")
     df = pd.DataFrame(data["docs"])
 
     paging = data["metadata"]["paging"]
