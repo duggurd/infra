@@ -1,103 +1,193 @@
-import Image from "next/image";
+"use client"
+
+import { useRef, useState } from "react";
+
+interface SearchResult {
+  id: string;
+  value: string;
+  type: 'keyword' | 'phrase' | 'employer';
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [query, setQuery] = useState("");
+  const [data, setData] = useState<SearchResult[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+  const handleSearch = async () => {
+    if (!query.trim()) {
+      setData([]);
+      setShowDropdown(false);
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/search?query=${query}`);
+      const results = await response.json();
+      setData(results);
+      setShowDropdown(results.length > 0);
+    } catch (error) {
+      console.error('Search error:', error);
+      setData([]);
+      setShowDropdown(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuery(value);
+    
+    // Clear existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    // Set new timeout for 500ms
+    timeoutRef.current = setTimeout(() => {
+      handleSearch();
+    }, 500);
+  };
+
+  const handleSelectResult = (result: SearchResult) => {
+    setQuery(result.value);
+    setShowDropdown(false);
+  };
+
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Categorize results
+  const categorizedResults = {
+    keyword: data.filter(item => item.type === 'keyword'),
+    phrase: data.filter(item => item.type === 'phrase'),
+    employer: data.filter(item => item.type === 'employer'),
+    function: data.filter(item => item.type === 'function')
+  };
+
+  const getCategoryIcon = (type: string) => {
+    switch (type) {
+      case 'keyword':
+        return '🔍';
+      case 'phrase':
+        return '💬';
+      case 'employer':
+        return '🏢';
+      case 'function':
+        return '💬';
+      default:
+        return '📝';
+    }
+  };
+
+  const getCategoryColor = (type: string) => {
+    switch (type) {
+      case 'keyword':
+        return 'from-blue-500/20 to-cyan-500/20 border-blue-400/30';
+      case 'phrase':
+        return 'from-green-500/20 to-emerald-500/20 border-green-400/30';
+      case 'employer':
+        return 'from-purple-500/20 to-violet-500/20 border-purple-400/30';
+      default:
+        return 'from-gray-500/20 to-slate-500/20 border-gray-400/30';
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center w-screen h-screen min-h-[400px] bg-cover bg-center bg-no-repeat rounded-md bg-[url('https://images.unsplash.com/photo-1630061937831-5b8bc0a58548?w=800&auto=format&fit=crop&q=90')]">
+      {/* Search Input Container */}
+      <div className="relative w-80">
+        <input 
+          type="text" 
+          value={query}
+          onChange={handleInputChange}
+          onFocus={() => data.length > 0 && setShowDropdown(true)}
+          placeholder="Search keywords, phrases, or employers..." 
+          className="px-4 py-3 w-full text-white text-sm bg-black/20 border border-white/50 backdrop-blur-sm rounded-lg shadow-[inset_0_1px_0px_rgba(255,255,255,0.75),0_0_9px_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.15)] placeholder:text-white/70 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-300 relative before:absolute before:inset-0 before:rounded-lg before:bg-gradient-to-br before:from-white/60 before:via-transparent before:to-transparent before:opacity-70 before:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:bg-gradient-to-tl after:from-white/30 after:via-transparent after:to-transparent after:opacity-50 after:pointer-events-none" 
+        />
+
+        {/* Dropdown Results */}
+        {showDropdown && (
+          <div className="absolute top-full left-0 right-0 mt-2 max-h-96 overflow-y-auto bg-black/20 backdrop-blur-sm border border-white/50 rounded-lg shadow-[inset_0_1px_0px_rgba(255,255,255,0.75),0_0_9px_rgba(0,0,0,0.2),0_3px_8px_rgba(0,0,0,0.15)] relative before:absolute before:inset-0 before:rounded-lg before:bg-gradient-to-br before:from-white/60 before:via-transparent before:to-transparent before:opacity-70 before:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:bg-gradient-to-tl after:from-white/30 after:via-transparent after:to-transparent after:opacity-50 after:pointer-events-none z-50">
+            <div className="relative z-10 p-2">
+              {/* Keywords Section */}
+              {categorizedResults.keyword.length > 0 && (
+                <div className="mb-3">
+                  <div className="px-3 py-2 text-xs font-semibold text-white/80 uppercase tracking-wider">
+                    {getCategoryIcon('keyword')} Keywords
+                  </div>
+                  {categorizedResults.keyword.map((item) => (
+                    <button
+                      key={`keyword-${item.id}`}
+                      onClick={() => handleSelectResult(item)}
+                      className={`w-full text-left px-3 py-2 mb-1 text-white text-sm bg-gradient-to-r ${getCategoryColor('keyword')} backdrop-blur-sm rounded-md hover:bg-white/10 transition-all duration-200 border`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <span className="text-blue-300">🔍</span>
+                        <span>{item.value}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Phrases Section */}
+              {categorizedResults.phrase.length > 0 && (
+                <div className="mb-3">
+                  <div className="px-3 py-2 text-xs font-semibold text-white/80 uppercase tracking-wider">
+                    {getCategoryIcon('phrase')} Phrases
+                  </div>
+                  {categorizedResults.phrase.map((item) => (
+                    <button
+                      key={`phrase-${item.id}`}
+                      onClick={() => handleSelectResult(item)}
+                      className={`w-full text-left px-3 py-2 mb-1 text-white text-sm bg-gradient-to-r ${getCategoryColor('phrase')} backdrop-blur-sm rounded-md hover:bg-white/10 transition-all duration-200 border`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <span className="text-green-300">💬</span>
+                        <span>"{item.value}"</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Employers Section */}
+              {categorizedResults.employer.length > 0 && (
+                <div className="mb-1">
+                  <div className="px-3 py-2 text-xs font-semibold text-white/80 uppercase tracking-wider">
+                    {getCategoryIcon('employer')} Employers
+                  </div>
+                  {categorizedResults.employer.map((item) => (
+                    <button
+                      key={`employer-${item.id}`}
+                      onClick={() => handleSelectResult(item)}
+                      className={`w-full text-left px-3 py-2 mb-1 text-white text-sm bg-gradient-to-r ${getCategoryColor('employer')} backdrop-blur-sm rounded-md hover:bg-white/10 transition-all duration-200 border`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <span className="text-purple-300">🏢</span>
+                        <span className="font-medium">{item.value}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* No Results */}
+              {data.length === 0 && query.trim() && (
+                <div className="px-3 py-4 text-center text-white/60 text-sm">
+                  No results found for "{query}"
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Click outside to close dropdown */}
+      {showDropdown && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowDropdown(false)}
+        />
+      )}
     </div>
   );
 }

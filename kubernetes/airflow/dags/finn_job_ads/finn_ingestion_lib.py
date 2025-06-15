@@ -113,7 +113,7 @@ def parse_ad_html(html, ad_type: AdType):
     return record
 
 def get_job_ads_metadata(occupation, storage_options, published:str="1"):
-    print("getting job ads metadata with published: ", published)
+    print(f"getting job ads metadata with published: {published} and occupation {occupation}", )
     # Bootstrapping for metadata
     data = get_finn_metdata_page(1, occupation, published)
 
@@ -129,6 +129,7 @@ def get_job_ads_metadata(occupation, storage_options, published:str="1"):
     if paging["last"] > 1:
         for page in range(1, paging["last"] + 1):
             data = get_finn_metdata_page(page, occupation, published)
+            df["occupation_name"] = data.get("metadata", {}).get("title")
             df = pd.concat([df, pd.DataFrame(data["docs"])])
     
 
@@ -157,6 +158,9 @@ def get_job_ads_metadata(occupation, storage_options, published:str="1"):
     # else:
     #     df["deadline"] = None
 
+
+    print(f"found {df["id"].nunique()} unique ads")
+
     df.to_parquet(
         f"s3://ingestion/finn/job_fulltime/ad_urls/{uuid.uuid1()}.zst.parquet",
         storage_options=storage_options,
@@ -166,22 +170,22 @@ def get_job_ads_metadata(occupation, storage_options, published:str="1"):
 
 def get_ads_content(storage_options):
     # get urls of ads that havent been ingested yet
-    all_ads_df = pd.read_parquet(
+    all_ad_ids_df = pd.read_parquet(
         "s3://ingestion/finn/job_fulltime/ad_urls",
         storage_options=storage_options,
         columns=["id", "canonical_url"]
     )
 
     try:
-        ingested_ads_df = pd.read_parquet(
+        ingested_ad_ids_df = pd.read_parquet(
             "s3://ingestion/finn/job_fulltime/ad_html",
             storage_options=storage_options,
             columns=["id"]
         )
 
-        new_ads = all_ads_df.merge(ingested_ads_df, how="left", on="id", indicator=True).query("_merge == 'left_only'")
+        new_ads = all_ad_ids_df.merge(ingested_ad_ids_df, how="left", on="id", indicator=True).query("_merge == 'left_only'")
     except FileNotFoundError:
-        new_ads = all_ads_df
+        new_ads = all_ad_ids_df
 
     ad_content_df = None
 
@@ -212,6 +216,7 @@ def get_ads_content(storage_options):
             ad_content_df = pd.concat([ad_content_df, pd.DataFrame(data)])
 
     if ad_content_df is not None:
+        print(f"Number of ads ingested: {ad_content_df["id"].nunique()}")
         ad_content_df.to_parquet(
             f"s3://ingestion/finn/job_fulltime/ad_html/{uuid.uuid1()}.zst.parquet",
             storage_options=storage_options,

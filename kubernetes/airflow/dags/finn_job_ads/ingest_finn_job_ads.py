@@ -43,7 +43,6 @@ def get_job_ads_metadata_task(storage_options, published_today):
         config = json.load(f)
         occupations = config["occupations"]
     
-    # TODO: Make tasks dynamic with occupations
     for occupation in occupations:
         get_job_ads_metadata(
             occupation=occupation, 

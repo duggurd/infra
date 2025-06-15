@@ -5,9 +5,7 @@ resource "kubernetes_secret" "postgres_credentials" {
   }
 
   data = {
-    POSTGRES_USER     = "hyperjob"
     POSTGRES_PASSWORD = "postgres"
-    POSTGRES_DB       = "hyperjob"
   }
 
   type = "Opaque"
@@ -82,6 +80,10 @@ resource "kubernetes_deployment" "hyperjob" {
             }
           }
 
+          port {
+            container_port = 5432
+          }
+
           volume_mount {
             name       = "postgres-storage"
             mount_path = "/var/lib/postgresql/data"
@@ -114,6 +116,28 @@ resource "kubernetes_service" "hyperjob" {
       port        = 3000
       target_port = 3000
       node_port   = 30800
+    }
+
+    type = "NodePort"
+  }
+}
+
+
+resource "kubernetes_service" "hyperjob-pg" {
+  metadata {
+    name      = "hyperjob-pg"
+    namespace = kubernetes_namespace.hyperjob.metadata[0].name
+  }
+
+  spec {
+    selector = {
+      app = "hyperjob"
+    }
+
+    port {
+      port        = 5432
+      target_port = 5432
+      node_port   = 30005
     }
 
     type = "NodePort"
