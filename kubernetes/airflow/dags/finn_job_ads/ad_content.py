@@ -154,23 +154,8 @@ def extract_ad_content_from_html(client: Minio, storage_options):
     if objects == []:
         print("no new ad_html objects to ingest, skipping")
         return 0
-
-    for object in objects:
-        data = client.get_object(bucket_name="ingestion", object_name=object.object_name).data # type: ignore
-
-        dataIo = io.BytesIO(data)
-        df = pd.read_parquet(dataIo)
-
-        if job_ad_html_df is None:
-            job_ad_html_df = df
-        else:
-            job_ad_html_df = pd.concat([job_ad_html_df, df])
-
-
-    # job_ad_html_df = pd.read_parquet(
-    #     "s3://ingestion/finn/job_fulltime/ad_html/",
-    #     storage_options=storage_options
-    # )
+    
+    print(f"found {len(objects)} objects to ingest")
 
     # we take all the urls to ensure overlap
     job_ad_urls_df = pd.read_parquet(
@@ -178,59 +163,74 @@ def extract_ad_content_from_html(client: Minio, storage_options):
         storage_options=storage_options
     )
 
+    while objects[:20] != []:
+        print(f"processing {len(objects)} objects")
+        ingest_objects = objects[:20]
+        for object in ingest_objects:
+            data = client.get_object(bucket_name="ingestion", object_name=object.object_name).data # type: ignore
+            dataIo = io.BytesIO(data)
+            df = pd.read_parquet(dataIo)
+        
+            if job_ad_html_df is None:
+                job_ad_html_df = df
+            else:
+                job_ad_html_df = pd.concat([job_ad_html_df, df])
 
-    # deduplciate content
-    job_ad_html_dedup_df = (job_ad_html_df
-        .groupby(["html_main", "id"]) # type: ignore
-        .min()
-        .reset_index())
 
-    # Deduplicate so we only parse and store one copy of the content
-    job_ad_urls_dedup_df = (job_ad_urls_df
-        .groupby(["id", "canonical_url"])
-        .agg(
-            timestamp=("timestamp", "min"),
-            occupation=("occupation", "first"),
-            ingeston_ts_url=("ingeston_ts", "min")
-        ).reset_index())
+        # deduplciate content
+        job_ad_html_dedup_df = (job_ad_html_df
+            .groupby(["html_main", "id"]) # type: ignore
+            .min()
+            .reset_index())
+
+        # Deduplicate so we only parse and store one copy of the content
+        job_ad_urls_dedup_df = (job_ad_urls_df
+            .groupby(["id", "canonical_url"])
+            .agg(
+                timestamp=("timestamp", "min"),
+                occupation=("occupation", "first"),
+                ingeston_ts_url=("ingeston_ts", "min")
+            ).reset_index())
 
     
-    # merge into one table that contains content and metadata, still only keep new content
-    job_ad_df = job_ad_urls_dedup_df.merge(job_ad_html_dedup_df, how="inner", on="id") # type: ignore
+        # merge into one table that contains content and metadata, still only keep new content
+        job_ad_df = job_ad_urls_dedup_df.merge(job_ad_html_dedup_df, how="inner", on="id") # type: ignore
 
-    job_ad_df["job_type"] = job_ad_df["canonical_url"].apply(
-        lambda x: x.replace("https://www.finn.no", "").split("/")[2]
-    )
+        job_ad_df["job_type"] = job_ad_df["canonical_url"].apply(
+            lambda x: x.replace("https://www.finn.no", "").split("/")[2]
+        )
 
-    job_ad_extracted_df = add_content_columns_to_df(job_ad_df)
-
-
-    job_ad_extracted_df["timestamp"] = pd.to_datetime(job_ad_extracted_df["timestamp"], unit="ms")
-    job_ad_extracted_df["y"] = job_ad_extracted_df["timestamp"].dt.year
-    job_ad_extracted_df["m"] = job_ad_extracted_df["timestamp"].dt.month
+        job_ad_extracted_df = add_content_columns_to_df(job_ad_df)
 
 
-    job_ad_extracted_df.to_parquet(
-        "s3://bronze/finn/job_fulltime/ad_content/",
-        storage_options=storage_options,
-        engine="pyarrow",
-        compression="zstd",
-        partition_cols=["y", "m"]
-    )
+        job_ad_extracted_df["timestamp"] = pd.to_datetime(job_ad_extracted_df["timestamp"], unit="ms")
+        job_ad_extracted_df["y"] = job_ad_extracted_df["timestamp"].dt.year
+        job_ad_extracted_df["m"] = job_ad_extracted_df["timestamp"].dt.month
+
+
+        job_ad_extracted_df.to_parquet(
+            "s3://bronze/finn/job_fulltime/ad_content/",
+            storage_options=storage_options,
+            engine="pyarrow",
+            compression="zstd",
+            partition_cols=["y", "m"]
+        )
 
     # finally mark ingestion sources as ingested
 
-    for object in objects:
-        print(f"tagging {object.object_name}")
+        for object in ingest_objects:
+            print(f"tagging {object.object_name}")
 
-        # tag source file as ingested
-        tags = Tags()
-        tags[INGESTED_TAG] = "true"
+            # tag source file as ingested
+            tags = Tags()
+            tags[INGESTED_TAG] = "true"
 
-        client.set_object_tags(
-            bucket_name="ingestion",
-            object_name=object.object_name, # type: ignore
-            tags=tags
-        )
+            client.set_object_tags(
+                bucket_name="ingestion",
+                object_name=object.object_name, # type: ignore
+                tags=tags
+            )
 
-        print(f"successfully tagged {object.object_name}")
+            print(f"successfully tagged {object.object_name}")
+
+        objects = objects[20:]
