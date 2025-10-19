@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface SearchResult {
   id: string;
@@ -12,6 +13,7 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [data, setData] = useState<SearchResult[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const router = useRouter();
 
   const handleSearch = async (searchQuery?: string) => {
     const queryToUse = searchQuery || query;
@@ -145,6 +147,11 @@ export default function Home() {
     }
   };
 
+  const handleSelectResult = (result: SearchResult) => {
+    // Navigate to the specific page based on type and ID
+    router.push(`/${result.type}/${result.id}`);
+  };
+
   return (
     <div className="justify-center w-screen h-screen min-h-[400px] bg-cover bg-center bg-no-repeat rounded-md bg-black">
       <div className="flex flex-col items-center justify-center mb-8 mt-20">
@@ -173,6 +180,7 @@ export default function Home() {
                     <button
                       key={`${item.id || index}-${item.type}-${item.value}`}
                       className={`w-full text-left px-3 py-2 mb-1 text-white text-sm bg-gradient-to-r ${getCategoryColor(item.type)} backdrop-blur-sm rounded-md hover:bg-white/10 transition-all duration-200 border flex items-center justify-between`}
+                      onClick={() => handleSelectResult(item)}
                     >
                       <div className="flex items-center space-x-2 flex-1">
                         <span className={`${item.type === 'keyword' ? 'text-blue-300' : item.type === 'phrase' ? 'text-green-300' : item.type === 'employer' ? 'text-purple-300' : 'text-orange-300'}`}>

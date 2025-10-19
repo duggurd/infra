@@ -411,11 +411,14 @@ def create_ngrams(database):
 def export_to_postgres(database, postgres_connection):
     print("exporting to postgres")
         #-- attach 'dbname={postgres_connection["schema"]} user={postgres_connection["login"]} password={postgres_connection["password"]} port={postgres_connection["port"]} host={postgres_connection["host"]}' as postgres_db (TYPE postgres);
+
+    print(f"attaching to postgres_db {postgres_connection}")
     database.execute(f"""
         attach 'dbname=postgres user=postgres password=postgres port=5432 host=hyperjob-pg.hyperjob.svc.cluster.local' as postgres_db (TYPE postgres);
     """)
 
     # insert keywords
+    print("inserting keywords")
     database.execute("""
         DROP TABLE IF EXISTS postgres_db.keywords;
         CREATE TABLE postgres_db.keywords (
@@ -430,6 +433,7 @@ def export_to_postgres(database, postgres_connection):
     """)
 
     # insert employers
+    print("inserting employers")
     database.execute("""
         DROP TABLE IF EXISTS postgres_db.employers;
         CREATE TABLE postgres_db.employers (
@@ -446,6 +450,7 @@ def export_to_postgres(database, postgres_connection):
     """)
 
     # insert stillingsfunksjon
+    print("inserting stillingsfunksjon")
     database.execute("""
         DROP TABLE IF EXISTS postgres_db.stillingsfunksjon;
         CREATE TABLE postgres_db.stillingsfunksjon (
@@ -460,6 +465,7 @@ def export_to_postgres(database, postgres_connection):
     """)
 
     # insert ads_with_id
+    print("inserting ads_with_id")
     database.execute("""
         DROP TABLE IF EXISTS postgres_db.ads_with_id;
         CREATE TABLE postgres_db.ads_with_id (
@@ -486,6 +492,7 @@ def export_to_postgres(database, postgres_connection):
     """)
 
     # insert ngrams
+    print("inserting ngrams")
     database.execute("""
         DROP TABLE IF EXISTS postgres_db.ngrams;
         CREATE TABLE postgres_db.ngrams (
@@ -503,4 +510,14 @@ def export_to_postgres(database, postgres_connection):
 
         CREATE INDEX IF NOT EXISTS idx_ngrams_words ON postgres_db.ngrams (words);
         CREATE INDEX IF NOT EXISTS idx_ngrams_ad_id ON postgres_db.ngrams (ad_id);
+    """)
+
+    print("inserting keyword_ads_bridge")
+    database.execute("""
+        DROP TABLE IF EXISTS postgres_db.keyword_ads_bridge;
+        CREATE TABLE postgres_db.keyword_ads_bridge (
+            id VARCHAR,
+            ad_id TEXT,
+            keyword_id INTEGER
+        );
     """)

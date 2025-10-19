@@ -1,28 +1,29 @@
 "use client"
 
-import { useState, useEffect } from "react";
-import { Employer, getEmployer, getEmployerKeywords, KeywordCounts } from "@/lib/database";
+import { useState, useEffect, use } from "react";
+import { Employer, KeywordCounts } from "@/lib/database";
 
-
-
-export default function EmployerPage({ params }: { params: { employerid: string } }) {
+export default function EmployerPage({ params }: { params: Promise<{ employerid: string }> }) {
     const [employer, setEmployer] = useState<Employer | null>(null);
     const [keywords, setKeywords] = useState<KeywordCounts[]>([]);
+    
+    // Unwrap the params Promise
+    const resolvedParams = use(params);
 
     useEffect(() => {
         const fetchEmployer = async () => {
-            const employer = await getEmployer(params.employerid);
+            const employer = await fetch(`/api/employer?employerid=${resolvedParams.employerid}`).then(res => res.json());
             setEmployer(employer);
         };
 
         const fetchKeywords = async () => {
-            const keywords = await getEmployerKeywords(params.employerid);
+            const keywords = await fetch(`/api/employer/keywords?employerid=${resolvedParams.employerid}`).then(res => res.json());
             setKeywords(keywords);
         };
 
         fetchEmployer();
         fetchKeywords();
-    }, [params.employerid]);
+    }, [resolvedParams.employerid]);
 
     return (
         <div>

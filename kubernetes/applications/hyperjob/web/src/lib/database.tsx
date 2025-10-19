@@ -144,6 +144,8 @@ export async function getEmployerKeywords(employerid: string): Promise<KeywordCo
             LIMIT 10
         `, [employerid]);
 
+        console.log(result.rows);
+
         return result.rows;
     } catch (error) {
         console.error('Database error:', error);
